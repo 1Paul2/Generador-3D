@@ -1,8 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { ContactShadows, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import Destellos from './Destellos.jsx'
+import Efectos from './Efectos.jsx'
 import { VISTA } from '../generadores/formas.js'
 
 // Espacio libre alrededor del modelo al encuadrarlo (1 = justo al borde de la vista).
@@ -35,15 +37,48 @@ function Encuadre({ modelo }) {
   return null
 }
 
+// Iluminacion de estudio: un cuarto virtual con paredes y lamparas, generado en
+// el navegador (no se descarga nada), se convierte en un mapa de entorno. Asi
+// cada objeto recibe luz y reflejos desde todas las direcciones, como en una
+// foto de producto, y el metal o el cristal reflejan de verdad.
+function Entorno() {
+  const renderizador = useThree((estado) => estado.gl)
+  const textura = useMemo(() => {
+    const generador = new THREE.PMREMGenerator(renderizador)
+    const cuarto = new RoomEnvironment()
+    const resultado = generador.fromScene(cuarto, 0.04).texture
+    generador.dispose()
+    return resultado
+  }, [renderizador])
+  useEffect(() => () => textura.dispose(), [textura])
+  return <primitive object={textura} attach="environment" />
+}
+
 // Escena 3D con fondo transparente: luces, camara orbital y los destellos que arman el modelo.
-// La luz hemisferica imita el exterior: un tono frio desde el cielo y uno
-// calido rebotado desde el suelo. La sombra de contacto apoya el objeto en el piso.
-export default function Visor3D({ modelo, desarmar, onProgreso, onDesarmado }) {
+// Luz de estudio (mapa de entorno), una luz principal que proyecta sombras
+// (las partes del objeto se hacen sombra entre si), una de relleno y la luz
+// hemisferica (tono frio desde el cielo, calido desde el suelo). La sombra de
+// contacto apoya el objeto en el piso.
+// listo: el modelo termino de armarse; ahi aparecen sus efectos de luz.
+export default function Visor3D({ modelo, desarmar, listo, onProgreso, onDesarmado }) {
   return (
-    <Canvas camera={{ position: VISTA, fov: 45 }}>
-      <hemisphereLight args={['#dfe9ff', '#5a4a3a', 0.9]} />
-      <directionalLight position={[12, 25, 15]} intensity={1.5} />
-      <directionalLight position={[-15, 10, -10]} intensity={0.35} />
+    <Canvas shadows camera={{ position: VISTA, fov: 45 }} scene={{ environmentIntensity: 0.55 }}>
+      <Entorno />
+      <hemisphereLight args={['#dfe9ff', '#5a4a3a', 0.45]} />
+      <directionalLight
+        position={[12, 25, 15]}
+        intensity={1.9}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-20}
+        shadow-camera-right={20}
+        shadow-camera-top={20}
+        shadow-camera-bottom={-20}
+        shadow-camera-far={80}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.03}
+      />
+      <directionalLight position={[-15, 10, -10]} intensity={0.3} />
 
       <Destellos
         modelo={modelo}
@@ -51,6 +86,7 @@ export default function Visor3D({ modelo, desarmar, onProgreso, onDesarmado }) {
         onProgreso={onProgreso}
         onDesarmado={onDesarmado}
       />
+      {modelo?.efectos && <Efectos key={modelo.id} efecto={modelo.efectos} activo={listo && !desarmar} />}
       {modelo && (
         <ContactShadows position={[0, -0.02, 0]} scale={40} opacity={0.45} blur={2.4} far={20} />
       )}
