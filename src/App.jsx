@@ -92,6 +92,17 @@ function App() {
               GitHub
             </a>
           </li>
+          <li>
+            <a
+              href="https://www.linkedin.com/in/poll-garro-vargas-449464406/"
+              target="_blank"
+            >
+              <svg className="button-icon" role="presentation" aria-hidden="true">
+                <use href="/icons.svg#linkedin-icon"></use>
+              </svg>
+              LinkedIn
+            </a>
+          </li>
         </ul>
       </section>
 
