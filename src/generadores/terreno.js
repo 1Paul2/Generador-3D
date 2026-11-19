@@ -43,6 +43,13 @@ const COLOR = {
   canonClaro: [196, 120, 78],
   canonOscuro: [140, 76, 48],
   corteza: [92, 66, 44],
+  pastoSeco: [165, 135, 70],
+}
+
+// Copas de los arboles en otono y primavera.
+const COPAS = {
+  otono: [[205, 95, 30], [225, 150, 40], [175, 50, 30], [235, 195, 70]],
+  primavera: [[110, 170, 70], [245, 175, 205], [250, 235, 240]],
 }
 
 const limitar = (x, a, b) => Math.min(b, Math.max(a, x))
@@ -214,7 +221,9 @@ function colorDelSuelo(base, entorno, paleta, rasgos, punto) {
   const { alt, pendiente, cauce, variacion, r, nivelAgua, crater, mojado } = punto
   const a = alt + variacion
   const desierto = rasgos.desierto || PAISAJES[base].desierto || entorno.desierto
-  const verde = desierto ? paleta.arenaOscura : rasgos.bosque || entorno.bosque ? COLOR.bosque : COLOR.pasto
+  let verde = desierto ? paleta.arenaOscura : rasgos.bosque || entorno.bosque ? COLOR.bosque : COLOR.pasto
+  // En otono el pasto se seca y toma tonos ocres.
+  if (rasgos.estacion === 'otono' && !desierto) verde = mezclar(verde, COLOR.pastoSeco, 0.6)
   let color
 
   if (base === 'duna') {
@@ -242,9 +251,12 @@ function colorDelSuelo(base, entorno, paleta, rasgos, punto) {
   color = mezclar(color, desierto ? paleta.arenaOscura : COLOR.tierraMojada, mojado * 0.7)
 
   // Nieve en las cumbres; no se sostiene en las paredes casi verticales.
-  const conNieve = rasgos.nieve || (base === 'montana' && !desierto)
+  // En invierno la nieve cubre todo el suelo, no solo las cumbres.
+  const invierno = rasgos.estacion === 'invierno'
+  const conNieve = rasgos.nieve || invierno || (base === 'montana' && !desierto)
+  const lineaNieve = invierno ? 0.02 : 0.6
   if (conNieve) {
-    color = mezclar(color, COLOR.nieve, suave(0.6, 0.7, a) * (1 - suave(2, 3.2, pendiente)))
+    color = mezclar(color, COLOR.nieve, suave(lineaNieve, lineaNieve + 0.1, a) * (1 - suave(2, 3.2, pendiente)))
   }
   // Fondo del crater: lava si el volcan esta activo, roca oscura si no.
   if (crater && r < CRATER) {
@@ -259,7 +271,8 @@ function colorDelSuelo(base, entorno, paleta, rasgos, punto) {
 }
 
 // Arbolitos sencillos (tronco y copa) para los bosques del entorno.
-function sembrarArboles(t, alto, puedeIr, conifera, verde, vertice, indices) {
+// colorCopa() da el color de cada copa; si devuelve null el arbol queda sin hojas.
+function sembrarArboles(t, alto, puedeIr, conifera, colorCopa, vertice, indices) {
   const elegidos = []
   for (let intento = 0; intento < ARBOLES * 12 && elegidos.length < ARBOLES; intento++) {
     const [x, z] = [(t.random() - 0.5) * (LADO - 2), (t.random() - 0.5) * (LADO - 2)]
@@ -275,7 +288,9 @@ function sembrarArboles(t, alto, puedeIr, conifera, verde, vertice, indices) {
     const copa = conifera
       ? new THREE.ConeGeometry(0.55 * escala, 1.6 * escala, 8).translate(x, suelo + 1.2 * escala, z)
       : new THREE.IcosahedronGeometry(0.6 * escala, 1).translate(x, suelo + 1 * escala, z)
-    geometrias.push([tronco, COLOR.corteza], [copa, mezclar(verde, [0, 0, 0], t.random() * 0.25)])
+    geometrias.push([tronco, COLOR.corteza])
+    const rgb = colorCopa()
+    if (rgb) geometrias.push([copa, mezclar(rgb, [0, 0, 0], t.random() * 0.25)])
   }
   for (const [geometria, rgb] of geometrias) {
     const plana = geometria.index ? geometria.toNonIndexed() : geometria
@@ -471,6 +486,16 @@ export function crearTerreno(receta, apariencia, random) {
   // Bosque: arbolitos en el suelo firme, lejos del agua, la nieve y las paredes.
   if (elementos.has('bosque')) {
     const verde = rasgos.desierto ? COLOR.arenaOscura : COLOR.bosque
+    const conifera = rasgos.conifera || base === 'montana'
+    // Color de cada copa segun la estacion: varios tonos al azar en otono y
+    // primavera, nieve sobre las coniferas en invierno y ramas peladas en los
+    // arboles de hoja.
+    const estacion = rasgos.estacion
+    const colorCopa = () => {
+      if (COPAS[estacion]) return COPAS[estacion][Math.floor(t.random() * COPAS[estacion].length)]
+      if (estacion === 'invierno' || estacion === 'seco') return conifera && estacion === 'invierno' ? mezclar(verde, COLOR.nieve, 0.6) : null
+      return verde
+    }
     const puedeIr = (x, z) => {
       const [ix, iz] = [x, z].map((v) => limitar(Math.round((v + LADO / 2) / celda), 0, n - 1))
       const i = iz * n + ix
@@ -482,7 +507,7 @@ export function crearTerreno(receta, apariencia, random) {
         (nivelAgua === null || alturas[i] > nivelAgua + 0.04)
       )
     }
-    sembrarArboles(t, alto, puedeIr, rasgos.conifera || base === 'montana', verde, vertice, indices)
+    sembrarArboles(t, alto, puedeIr, conifera, colorCopa, vertice, indices)
   }
 
   // Costados de la maqueta: capas de tierra (y agua arriba, si la hay), de la

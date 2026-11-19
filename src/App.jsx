@@ -10,7 +10,7 @@ import { identificarRegiones } from './analisis/regiones.js'
 import { crearForma } from './generadores/formas.js'
 import { descargarGLB } from './exportar/glb.js'
 import { paletaDesdeColor } from './generadores/paleta.js'
-import { leerElementos, leerRasgos, leerVolumen } from './parser/rasgos.js'
+import { leerElementos, leerEstacion, leerRasgos, leerVolumen } from './parser/rasgos.js'
 import { crearRandom, semillaDeTexto } from './utils/random.js'
 import './App.css'
 
@@ -104,6 +104,8 @@ function App() {
     receta.rasgos.volumen = leerVolumen(texto, titulo, descripcion)
     // Elementos que se suman al entorno ("montana con lago"): rio, lago, bosque...
     receta.rasgos.elementos = leerElementos(texto, titulo, descripcion)
+    // Estacion de la vegetacion ("arbol de otono"): cambia hojas, pasto y nieve.
+    receta.rasgos.estacion = leerEstacion(texto, titulo, descripcion)
 
     // La erosion tarda un momento: se muestra el aviso antes de empezar.
     setMensaje('Generando...')

@@ -73,6 +73,26 @@ export function leerElementos(...textos) {
     .map(([elemento]) => elemento)
 }
 
+// Estaciones y estados de la vegetacion.
+const ESTACIONES = {
+  otono: ['otono', 'otonal', 'hojas secas', 'ocre'],
+  invierno: ['invierno', 'invernal', 'nevad', 'escarcha'],
+  primavera: ['primavera', 'primaveral', 'en flor', 'florecid', 'florido', 'cerezo', 'almendro', 'sakura'],
+  seco: ['seco', 'muerto', 'sin hojas', 'pelado', 'deshojado'],
+}
+
+// Lee la estacion que nombran los textos ("arbol de otono"). Se mira solo lo
+// que nombra a la cosa, igual que el volumen. Devuelve null si no dice ninguna.
+export function leerEstacion(...textos) {
+  for (const texto of textos) {
+    const limpio = normalizar(texto ?? '')
+    for (const [estacion, raices] of Object.entries(ESTACIONES)) {
+      if (raices.some((raiz) => new RegExp(`\\b${raiz}`).test(limpio))) return estacion
+    }
+  }
+  return null
+}
+
 // Busca una altura en metros: "3432 m", "5.895 metros", "2 437 msnm".
 function leerAltitud(texto) {
   const encontrado = texto.match(/\b(\d{1,2}[.\s]?\d{3})\s*(m\b|metros|msnm|m s n m)/)
