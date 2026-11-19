@@ -40,6 +40,20 @@ const FORMAS = {
   isla: 'isla',
   duna: 'duna',
   desierto: 'duna',
+  llano: 'llano',
+  pradera: 'llano',
+  meseta: 'meseta',
+  cascada: 'cascada',
+  catarata: 'cascada',
+  río: 'rio',
+  arroyo: 'rio',
+  lago: 'lago',
+  laguna: 'lago',
+  cañón: 'canon',
+  barranco: 'canon',
+  acantilado: 'acantilado',
+  playa: 'costa',
+  costa: 'costa',
 }
 
 // Palabras que nombran una forma abstracta y no una cosa real: para estas no
@@ -67,6 +81,14 @@ export const NOMBRES_FIGURAS = {
   colina: 'colina',
   isla: 'isla',
   duna: 'dunas',
+  llano: 'llano',
+  meseta: 'meseta',
+  cascada: 'cascada',
+  rio: 'río',
+  lago: 'lago',
+  canon: 'cañón',
+  acantilado: 'acantilado',
+  costa: 'costa',
 }
 
 const COLORES = {

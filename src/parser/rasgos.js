@@ -53,6 +53,26 @@ export function leerVolumen(...textos) {
   return null
 }
 
+// Elementos de un entorno que se pueden sumar a cualquier relieve.
+const ELEMENTOS = {
+  rio: ['rio', 'arroyo', 'riachuelo', 'corriente de agua', 'curso de agua'],
+  cascada: ['cascada', 'catarata', 'salto de agua', 'caida de agua'],
+  lago: ['lago', 'laguna', 'estanque'],
+  canon: ['canon', 'garganta', 'barranco', 'desfiladero'],
+  acantilado: ['acantilado', 'risco', 'precipicio'],
+  mar: ['mar', 'costa', 'playa', 'litoral', 'oceano', 'bahia'],
+  bosque: ['bosque', 'selva', 'arboleda', 'jungla'],
+}
+
+// Lee que elementos nombran los textos ("montana con lago y bosque"). Como el
+// volumen, se lee solo de lo que nombra a la cosa (texto, titulo, descripcion).
+export function leerElementos(...textos) {
+  const limpio = normalizar(textos.join(' '))
+  return Object.entries(ELEMENTOS)
+    .filter(([, raices]) => raices.some((raiz) => new RegExp(`\\b${raiz}(e?s)?\\b`).test(limpio)))
+    .map(([elemento]) => elemento)
+}
+
 // Busca una altura en metros: "3432 m", "5.895 metros", "2 437 msnm".
 function leerAltitud(texto) {
   const encontrado = texto.match(/\b(\d{1,2}[.\s]?\d{3})\s*(m\b|metros|msnm|m s n m)/)

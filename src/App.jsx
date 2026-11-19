@@ -10,7 +10,7 @@ import { identificarRegiones } from './analisis/regiones.js'
 import { crearForma } from './generadores/formas.js'
 import { descargarGLB } from './exportar/glb.js'
 import { paletaDesdeColor } from './generadores/paleta.js'
-import { leerRasgos, leerVolumen } from './parser/rasgos.js'
+import { leerElementos, leerRasgos, leerVolumen } from './parser/rasgos.js'
 import { crearRandom, semillaDeTexto } from './utils/random.js'
 import './App.css'
 
@@ -102,6 +102,8 @@ function App() {
     // texto, el titulo y la descripcion corta. El articulo menciona demasiadas
     // cosas: "un arbol es una planta perenne con hojas" no hace plano al arbol.
     receta.rasgos.volumen = leerVolumen(texto, titulo, descripcion)
+    // Elementos que se suman al entorno ("montana con lago"): rio, lago, bosque...
+    receta.rasgos.elementos = leerElementos(texto, titulo, descripcion)
 
     // La erosion tarda un momento: se muestra el aviso antes de empezar.
     setMensaje('Generando...')
