@@ -2,7 +2,7 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import Fragmentos from './Fragmentos.jsx'
 
-// Escena 3D: luces, piso, camara orbital y el modelo que se va armando.
+// Escena 3D con fondo transparente: luces, camara orbital y el modelo que se va armando.
 export default function Visor3D({ modelo, onProgreso }) {
   const centro = modelo ? modelo.altura / 2 : 0
 
@@ -11,7 +11,6 @@ export default function Visor3D({ modelo, onProgreso }) {
       <ambientLight intensity={0.7} />
       <directionalLight position={[12, 25, 15]} intensity={1.6} />
       <directionalLight position={[-15, 10, -10]} intensity={0.4} />
-      <gridHelper args={[40, 40, '#777', '#444']} position={[0, -0.5, 0]} />
 
       {modelo && (
         <Fragmentos

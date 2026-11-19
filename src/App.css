@@ -35,8 +35,7 @@
     padding: 8px 14px;
     border-radius: 8px;
     border: 1px solid var(--border);
-    background: var(--code-bg);
-    color: var(--text-h);
+      color: var(--text-h);
 
     &:focus {
       outline: 2px solid var(--accent-border);
