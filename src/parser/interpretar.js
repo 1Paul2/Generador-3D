@@ -162,6 +162,14 @@ const COLORES = {
   blanca: '#eeeeee',
   negro: '#3a3a3a',
   negra: '#3a3a3a',
+  oro: '#d4a73c',
+  dorado: '#d4a73c',
+  dorada: '#d4a73c',
+  plata: '#c4c8cf',
+  plateado: '#c4c8cf',
+  plateada: '#c4c8cf',
+  bronce: '#b0763a',
+  cobre: '#b8673c',
 }
 
 const TAMANOS = {
