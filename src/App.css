@@ -68,6 +68,11 @@
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+    border-color: transparent;
+  }
 }
 
 #visor {
@@ -100,6 +105,25 @@
   .acciones {
     display: flex;
     gap: 8px;
+  }
+
+  .detalle {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .fuente {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text);
+
+    &:hover {
+      color: var(--accent);
+    }
   }
 
   @media (max-width: 720px) {

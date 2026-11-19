@@ -41,12 +41,17 @@ function crearDestellos() {
 
 const DESTELLOS = crearDestellos()
 
-// Elige a que punto de la superficie va cada destello y cuando sale. Salen de
-// abajo hacia arriba, con algo de desorden, para que la forma crezca desde la base.
+// Velocidad del desarme comparada con el armado (mas rapido para no hacer esperar).
+const VELOCIDAD_DESARME = 1.6
+
+// Elige a que punto de la superficie va cada destello, de que color queda (el
+// de la superficie en ese punto) y cuando sale. Salen de abajo hacia arriba,
+// con algo de desorden, para que la forma crezca desde la base.
 function calcularDestinos(modelo) {
   const destinos = new Float32Array(CANTIDAD * 3)
+  const colores = new Float32Array(CANTIDAD * 3)
   const retrasos = new Float32Array(CANTIDAD)
-  if (!modelo) return { destinos, retrasos, fin: 0 }
+  if (!modelo) return { destinos, colores, retrasos, fin: 0 }
 
   const random = crearRandom(modelo.semilla)
   const muestreador = new MeshSurfaceSampler(new THREE.Mesh(modelo.geometria))
@@ -54,21 +59,22 @@ function calcularDestinos(modelo) {
     .build()
   const punto = new THREE.Vector3()
   const normal = new THREE.Vector3()
+  const color = new THREE.Color()
 
   for (let i = 0; i < CANTIDAD; i++) {
-    muestreador.sample(punto, normal)
+    muestreador.sample(punto, normal, color)
     // Un poco hacia afuera, para que la superficie no tape al destello.
     punto.addScaledVector(normal, 0.05).toArray(destinos, i * 3)
+    color.toArray(colores, i * 3)
     retrasos[i] = (punto.y / modelo.altura) * 1.8 + random() * 0.9
   }
-  return { destinos, retrasos, fin: Math.max(...retrasos) + VUELO }
+  return { destinos, colores, retrasos, fin: Math.max(...retrasos) + VUELO }
 }
 
 const vertexShader = /* glsl */ `
   uniform float uTiempo;
   uniform float uArmado;
   uniform float uPixeles;
-  uniform vec3 uColor;
   uniform float uOcultar;
   attribute float tamano;
   attribute float fase;
@@ -76,6 +82,7 @@ const vertexShader = /* glsl */ `
   attribute float retraso;
   attribute vec3 tinte;
   attribute vec3 destino;
+  attribute vec3 colorDestino;
   varying vec3 vTinte;
   varying float vBrillo;
   varying float vVisible;
@@ -95,11 +102,11 @@ const vertexShader = /* glsl */ `
     gl_Position = projectionMatrix * vista;
 
     // Titileo: el brillo sube y baja a un ritmo propio de cada destello.
-    // Al posarse se achica y toma el color del modelo.
+    // Al posarse se achica y toma el color de la superficie en ese punto.
     vBrillo = pow(0.5 + 0.5 * sin(uTiempo * ritmo + fase), 3.0);
     float escala = mix(1.0, 0.35, k);
     gl_PointSize = tamano * escala * uPixeles * 25.0 * (0.5 + 0.7 * vBrillo) * (20.0 / -vista.z);
-    vTinte = mix(tinte, uColor, k);
+    vTinte = mix(tinte, colorDestino, k);
 
     // Los destellos posados se apagan a medida que aparece la superficie.
     vVisible = 1.0 - k * uOcultar;
@@ -123,13 +130,15 @@ const fragmentShader = /* glsl */ `
 
 // Un universo de destellos que titilan y giran. Cuando llega un modelo, cada
 // destello vuela a un punto de su superficie y, al juntarse todos, aparece la
-// forma lisa mientras los destellos se apagan.
+// forma lisa mientras los destellos se apagan. Si se pide desarmar, la misma
+// animacion corre hacia atras y al terminar se avisa con onDesarmado.
 // Correccion - Poll: apagar los destellos sobre la pieza armada y volver al universo al borrar
 // Correccion - Poll: la pieza armada no debe tener brillos: superficie mate y destellos ocultos al terminar
-export default function Destellos({ modelo, onProgreso }) {
+export default function Destellos({ modelo, desarmar, onProgreso, onDesarmado }) {
   const puntos = useRef()
   const superficie = useRef()
   const inicio = useRef(null)
+  const desarme = useRef(null)
   const llegados = useRef(-1)
   const pixeles = useThree((estado) => estado.viewport.dpr)
 
@@ -138,12 +147,11 @@ export default function Destellos({ modelo, onProgreso }) {
       uTiempo: { value: 0 },
       uArmado: { value: -1000 },
       uPixeles: { value: 1 },
-      uColor: { value: new THREE.Color() },
       uOcultar: { value: 0 },
     }),
     [],
   )
-  const { destinos, retrasos, fin } = useMemo(() => calcularDestinos(modelo), [modelo])
+  const { destinos, colores, retrasos, fin } = useMemo(() => calcularDestinos(modelo), [modelo])
   const llegadas = useMemo(() => [...retrasos].map((r) => r + VUELO).sort((a, b) => a - b), [retrasos])
 
   useEffect(() => {
@@ -165,10 +173,24 @@ export default function Destellos({ modelo, onProgreso }) {
     }
 
     inicio.current ??= ahora
-    const armado = ahora - inicio.current
+    let armado = ahora - inicio.current
+
+    // Desarmar es retroceder el tiempo del armado: la superficie se desvanece,
+    // los destellos reaparecen y vuelven al universo, primero los de arriba.
+    // Si se borra a medio armar, se retrocede desde donde iba.
+    if (desarmar) {
+      desarme.current ??= { inicio: ahora, desde: Math.min(armado, fin + APARICION * 0.4) }
+      armado = desarme.current.desde - (ahora - desarme.current.inicio) * VELOCIDAD_DESARME
+      if (armado < 0 && !desarme.current.avisado) {
+        desarme.current.avisado = true
+        onDesarmado()
+      }
+    } else {
+      desarme.current = null
+    }
+
     const aparicion = THREE.MathUtils.clamp((armado - fin + APARICION * 0.6) / APARICION, 0, 1)
     material.uniforms.uArmado.value = armado
-    material.uniforms.uColor.value.set(modelo.color)
     material.uniforms.uOcultar.value = aparicion
     superficie.current.material.opacity = aparicion
     // Con la forma completa no queda ningun destello encima.
@@ -193,6 +215,7 @@ export default function Destellos({ modelo, onProgreso }) {
           <bufferAttribute attach="attributes-fase" args={[DESTELLOS.fases, 1]} />
           <bufferAttribute attach="attributes-ritmo" args={[DESTELLOS.ritmos, 1]} />
           <bufferAttribute attach="attributes-destino" args={[destinos, 3]} />
+          <bufferAttribute attach="attributes-colorDestino" args={[colores, 3]} />
           <bufferAttribute attach="attributes-retraso" args={[retrasos, 1]} />
         </bufferGeometry>
         <shaderMaterial
@@ -206,9 +229,9 @@ export default function Destellos({ modelo, onProgreso }) {
       </points>
 
       {modelo && (
-        <mesh ref={superficie} geometry={modelo.geometria}>
+        <mesh key={modelo.id} ref={superficie} geometry={modelo.geometria}>
           <meshStandardMaterial
-            color={modelo.color}
+            vertexColors
             roughness={1}
             metalness={0}
             transparent
