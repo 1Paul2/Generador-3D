@@ -21,6 +21,88 @@
   }
 }
 
+.buscador {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  max-width: 560px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 16px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--code-bg);
+    color: var(--text-h);
+
+    &:focus {
+      outline: 2px solid var(--accent-border);
+      outline-offset: 1px;
+    }
+  }
+
+  @media (max-width: 720px) {
+    max-width: none;
+  }
+}
+
+.buscador button,
+#estado button {
+  font: inherit;
+  font-size: 16px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  color: var(--accent);
+  background: var(--accent-bg);
+  cursor: pointer;
+  transition: border-color 0.3s;
+
+  &:hover {
+    border-color: var(--accent-border);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+#visor {
+  position: relative;
+  height: 65vh;
+  min-height: 360px;
+  background: var(--code-bg);
+
+  .aviso {
+    position: absolute;
+    inset: auto 0 24px;
+    padding: 0 16px;
+    pointer-events: none;
+  }
+}
+
+#estado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 32px;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 15px;
+
+  button {
+    padding: 4px 12px;
+  }
+
+  @media (max-width: 720px) {
+    padding: 12px 16px;
+  }
+}
+
 #contacto {
   padding: 32px;
   border-top: 1px solid var(--border);
