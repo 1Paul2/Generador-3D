@@ -24,6 +24,9 @@ const LADOS = 64 // divisiones alrededor del eje en el torno
 const GROSOR = 0.85
 // Medio grosor de una lamina (hoja, bandera), como fraccion de su medida mas grande.
 const LAMINA = 0.006
+// Cuanto mas clara (en luz Lab) tiene que ser la franja central que los bordes
+// para considerar redondo un objeto por su sombreado.
+const REDONDEZ_MINIMA = 6
 const SUAVIZADO = 3 // pasadas para borrar los escalones de los pixeles
 const ANCHO_SURCO = 2 // pixeles a cada lado de la junta entre dos partes
 const PROFUNDIDAD_SURCO = 0.12 // cuanto se hunde la junta, como fraccion de la altura
@@ -45,6 +48,43 @@ function encuadrar({ mascara, ancho, alto }) {
 // Que tan simetrica es la silueta respecto de su eje vertical (1 = espejo
 // perfecto) y que parte de las filas tiene el objeto cortado en dos o mas
 // tramos (como las piernas de una persona).
+// Forma a partir del sombreado: en un objeto redondo, los costados quedan de
+// perfil a la luz y se ven mas oscuros que el centro; en uno plano la luz es
+// pareja. Para cada fila se compara la luz (L de Lab) del centro de la fila
+// con la de sus bordes, y se promedia pesando por el ancho de la fila.
+// Devuelve cuanto mas claro es el centro que los bordes (0 = parejo).
+function medirRedondez({ mascara, lab, ancho }, caja) {
+  let suma = 0
+  let peso = 0
+  for (let y = caja.y0; y <= caja.y1; y++) {
+    let [izquierda, derecha] = [Infinity, -Infinity]
+    for (let x = caja.x0; x <= caja.x1; x++) {
+      if (mascara[y * ancho + x]) {
+        izquierda = Math.min(izquierda, x)
+        derecha = Math.max(derecha, x)
+      }
+    }
+    const mitad = (derecha - izquierda) / 2
+    if (mitad < 4) continue
+    const centro = (izquierda + derecha) / 2
+    const luz = { adentro: [0, 0], afuera: [0, 0] }
+    for (let x = izquierda; x <= derecha; x++) {
+      const i = y * ancho + x
+      if (!mascara[i]) continue
+      const u = Math.abs(x - centro) / mitad
+      const zona = u < 0.4 ? luz.adentro : u > 0.75 ? luz.afuera : null
+      if (zona) {
+        zona[0] += lab[i][0]
+        zona[1]++
+      }
+    }
+    if (!luz.adentro[1] || !luz.afuera[1]) continue
+    suma += (luz.adentro[0] / luz.adentro[1] - luz.afuera[0] / luz.afuera[1]) * mitad
+    peso += mitad
+  }
+  return peso ? suma / peso : 0
+}
+
 function medirSimetria({ mascara, ancho }, caja) {
   let suma = 0
   let cuenta = 0
@@ -398,10 +438,15 @@ export function crearDesdeSilueta(segmento, regiones, receta) {
     return [color.r, color.g, color.b]
   }
 
+  // El volumen se toma del texto; si el texto no dice nada, se lee en la foto:
+  // una silueta simetrica, de un solo tramo por fila y con los bordes mas
+  // oscuros que el centro (sombreado de algo redondo) va al torno.
   const volumen = receta.rasgos?.volumen
   const { parecido, partidas } = medirSimetria(segmento, caja)
+  const redondaPorSombra =
+    !volumen && parecido > 0.85 && partidas < 0.1 && medirRedondez(segmento, caja) > REDONDEZ_MINIMA
   const metodo =
-    volumen === 'giratorio' && parecido > 0.75 && partidas < 0.15
+    (volumen === 'giratorio' && parecido > 0.75 && partidas < 0.15) || redondaPorSombra
       ? 'torno'
       : volumen === 'plano'
         ? 'plano'
