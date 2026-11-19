@@ -44,8 +44,10 @@ export async function resumen(termino) {
 // Nombres de archivo que casi nunca son una foto del objeto en si.
 const NO_ES_FOTO = /mapa|map|locator|ubicaci|escudo|coat|bandera|flag|logo|icon|diagram|esquema|scheme|plano|grafic|chart/i
 
-// Ancho en pixeles de la copia de la foto que se descarga.
-const ANCHO_FOTO = 640
+// Ancho en pixeles de la copia de la foto que se descarga. Mas grande que la
+// grilla de analisis: al achicarla se promedian varios pixeles reales y se
+// reduce el ruido de compresion de la foto.
+const ANCHO_FOTO = 1280
 
 async function consultar(url) {
   const respuesta = await fetch(url)
