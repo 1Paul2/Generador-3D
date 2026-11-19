@@ -2,8 +2,8 @@ import { useState } from 'react'
 import Buscador from './components/Buscador.jsx'
 import Visor3D from './components/Visor3D.jsx'
 import { interpretar, FORMAS_DISPONIBLES } from './parser/interpretar.js'
-import { construir } from './generadores/voxeles.js'
-import { crearRandom, semillaDeTexto } from './utils/random.js'
+import { crearForma } from './generadores/formas.js'
+import { semillaDeTexto } from './utils/random.js'
 import './App.css'
 
 function App() {
@@ -19,10 +19,9 @@ function App() {
       )
       return
     }
-    const random = crearRandom(semillaDeTexto(texto) + intento)
     setModelo({
-      ...construir(receta, random),
-      id: Date.now(),
+      ...crearForma(receta),
+      semilla: semillaDeTexto(texto) + intento,
       texto,
       intento,
       color: receta.color,
@@ -31,7 +30,6 @@ function App() {
     setMensaje('')
   }
 
-  const total = modelo?.fragmentos.length ?? 0
 
   return (
     <>
@@ -52,8 +50,7 @@ function App() {
         {modelo ? (
           <>
             <span>
-              {progreso < total ? 'Armando' : 'Listo'}: {progreso} / {total}{' '}
-              fragmentos
+              {progreso < 100 ? `Armando: ${progreso} %` : 'Listo'}
             </span>
             <button
               type="button"
