@@ -2,10 +2,15 @@ import { rgbALab } from '../utils/color.js'
 import { distancia, distanciaMinima, kmedias } from '../utils/kmedias.js'
 
 // Separa el objeto del fondo en una foto, sin inteligencia artificial:
-//   1. Achica la foto a unos 256 pixeles de lado (promediando) y pasa los
+//   1. Achica la foto a unos 512 pixeles de lado (promediando) y pasa los
 //      colores a Lab, donde las distancias se parecen a lo que percibe el ojo.
+//      Trabaja sobre una copia levemente suavizada, para que la textura del
+//      fondo (pasto, grano) no parezca un borde.
 //   2. Detecta los bordes con el filtro de Sobel (donde el color cambia fuerte).
-//   3. Aprende como es el fondo agrupando los colores del borde de la foto.
+//   3. Aprende como es el fondo con los colores del borde de la foto: sus
+//      grupos de colores y una superficie de color que predice el fondo en
+//      cada punto (para fondos degradados). Las sombras sobre el fondo se
+//      toleran: un pixel mas oscuro del mismo tono sigue siendo fondo.
 //   4. "Inunda" desde el borde por los pixeles que se parecen al fondo; los
 //      bordes fuertes frenan el agua, asi no se mete en el objeto.
 //   5. Refina como GrabCut (simplificado): con el recorte aprende los colores
@@ -18,16 +23,22 @@ import { distancia, distanciaMinima, kmedias } from '../utils/kmedias.js'
 // colores en RGB y en Lab; fondo: colores Lab tipicos del fondo) o null si no
 // encontro un objeto claro.
 
-const LADO = 256
-const BANDA = 2 // pixeles del borde que se toman como muestra del fondo
+// Lado de la grilla de analisis (512: en un banco de 100 pruebas dio la mayor
+// precision). Los anchos medidos en pixeles (como BANDA)
+// estan pensados para 256 y se escalan si la grilla es mas fina o mas gruesa.
+export const LADO = 512
+const BANDA = 2 // pixeles del borde que se toman como muestra del fondo (en 256)
 const VUELTAS_REFINADO = 4
 const PASADAS_ICM = 3
 const MULTA_CORTE = 12 // cuanto cuesta separar dos pixeles vecinos parecidos
 const GRUPOS = 5 // colores con que se describe el objeto y el fondo al refinar
+const SOMBRA_MAS_OSCURA = 0.45 // factor de luz mas bajo que todavia se considera sombra
+const MULTA_SOMBRA = 10 // cuanto cuesta, en distancia, oscurecer el fondo del todo
+const OBJETO_MINIMO = 0.003 // parte minima de la foto que debe ocupar el objeto
 
 // Achica la imagen promediando bloques de pixeles. Devuelve un color [r, g, b] por pixel.
-function achicar(imagen) {
-  const escala = Math.max(1, Math.max(imagen.ancho, imagen.alto) / LADO)
+function achicar(imagen, lado) {
+  const escala = Math.max(1, Math.max(imagen.ancho, imagen.alto) / lado)
   const ancho = Math.max(1, Math.round(imagen.ancho / escala))
   const alto = Math.max(1, Math.round(imagen.alto / escala))
   const colores = []
@@ -167,10 +178,100 @@ function limpiar(mascara, ancho, alto) {
   return rellenarHuecos(limpia, ancho, alto)
 }
 
+// Suavizado de caja: cada pixel promedia su vecindario. Sirve para que la
+// textura fina del fondo (pasto, grano, tela) no parezca un borde.
+function suavizarColores(lab, ancho, alto, radio) {
+  let actual = lab
+  for (const [dx, dy] of [[1, 0], [0, 1]]) {
+    const siguiente = new Array(actual.length)
+    for (let y = 0; y < alto; y++) {
+      for (let x = 0; x < ancho; x++) {
+        const suma = [0, 0, 0]
+        let cuenta = 0
+        for (let k = -radio; k <= radio; k++) {
+          const [xx, yy] = [x + dx * k, y + dy * k]
+          if (xx < 0 || yy < 0 || xx >= ancho || yy >= alto) continue
+          const c = actual[yy * ancho + xx]
+          suma[0] += c[0]
+          suma[1] += c[1]
+          suma[2] += c[2]
+          cuenta++
+        }
+        siguiente[y * ancho + x] = suma.map((v) => v / cuenta)
+      }
+    }
+    actual = siguiente
+  }
+  return actual
+}
+
+// Resuelve un sistema de ecuaciones lineales (eliminacion de Gauss).
+function resolver(matriz, valores) {
+  const n = valores.length
+  const m = matriz.map((fila, i) => [...fila, valores[i]])
+  for (let c = 0; c < n; c++) {
+    let pivote = c
+    for (let f = c + 1; f < n; f++) if (Math.abs(m[f][c]) > Math.abs(m[pivote][c])) pivote = f
+    ;[m[c], m[pivote]] = [m[pivote], m[c]]
+    for (let f = c + 1; f < n; f++) {
+      const factor = m[f][c] / m[c][c]
+      for (let k = c; k <= n; k++) m[f][k] -= factor * m[c][k]
+    }
+  }
+  const x = new Array(n).fill(0)
+  for (let f = n - 1; f >= 0; f--) {
+    let suma = m[f][n]
+    for (let k = f + 1; k < n; k++) suma -= m[f][k] * x[k]
+    x[f] = suma / m[f][f]
+  }
+  return x
+}
+
+// Superficie de color del fondo: ajusta, con minimos cuadrados, un polinomio
+// de segundo grado en x e y a los colores del borde. Asi predice que color
+// tendria el fondo en cualquier punto, aunque sea un degrade o tenga una
+// vineta (mas oscuro en las esquinas). Devuelve una funcion i -> color Lab.
+function ajustarFondo(lab, indicesBorde, ancho, alto) {
+  const terminos = (i) => {
+    const x = ((i % ancho) / (ancho - 1)) * 2 - 1
+    const y = (Math.floor(i / ancho) / (alto - 1)) * 2 - 1
+    return [1, x, y, x * x, y * y, x * y]
+  }
+  const matriz = Array.from({ length: 6 }, (_, f) => Array.from({ length: 6 }, (_, c) => (f === c ? 1e-6 : 0)))
+  const valores = [0, 1, 2].map(() => new Array(6).fill(0))
+  for (const i of indicesBorde) {
+    const t = terminos(i)
+    for (let f = 0; f < 6; f++) {
+      for (let c = 0; c < 6; c++) matriz[f][c] += t[f] * t[c]
+      for (let canal = 0; canal < 3; canal++) valores[canal][f] += t[f] * lab[i][canal]
+    }
+  }
+  const coeficientes = valores.map((v) => resolver(matriz, v))
+  return (i) => {
+    const t = terminos(i)
+    return coeficientes.map((co) => co.reduce((suma, valor, k) => suma + valor * t[k], 0))
+  }
+}
+
+// Distancia de un color al fondo, tolerante a las sombras. Una sombra
+// multiplica el color del fondo por un factor menor que 1, y en Lab eso
+// equivale a escalar todo el vector (L + 16, a, b) por un mismo numero. Por
+// eso se busca que factor k acerca mas el fondo al pixel: si k esta entre
+// SOMBRA_MAS_OSCURA y 1 (es el fondo, mas oscuro), la distancia es lo que
+// sobra despues de escalar, mas una pequena multa por oscurecer.
+function distanciaConSombra(color, fondo) {
+  const p = [color[0] + 16, color[1], color[2]]
+  const q = [fondo[0] + 16, fondo[1], fondo[2]]
+  const k = (p[0] * q[0] + p[1] * q[1] + p[2] * q[2]) / Math.max(1e-6, q[0] * q[0] + q[1] * q[1] + q[2] * q[2])
+  if (k >= 1 || k < SOMBRA_MAS_OSCURA) return distancia(color, fondo)
+  const resto = Math.hypot(p[0] - k * q[0], p[1] - k * q[1], p[2] - k * q[2])
+  return resto + (1 - k) * MULTA_SOMBRA
+}
+
 // Primer recorte: inundacion desde el borde, frenada por los bordes fuertes.
-function inundarFondo(lab, bordes, ancho, alto, enBanda, centros, tolerancia) {
+// cercania(i) dice que tan distinto del fondo es el pixel i.
+function inundarFondo(bordes, ancho, alto, enBanda, cercania, tolerancia) {
   const umbralBorde = Math.max(8, percentil(bordes, 0.85))
-  const cercania = (i) => distanciaMinima(lab[i], centros)
   // Un pixel se suma al fondo si se parece al fondo y no hay un borde fuerte,
   // o si se parece muchisimo (aunque haya textura, como en el pasto).
   const pasa = (i) => {
@@ -178,9 +279,9 @@ function inundarFondo(lab, bordes, ancho, alto, enBanda, centros, tolerancia) {
     return d < tolerancia && (bordes[i] < umbralBorde || d < tolerancia * 0.5)
   }
 
-  const fondo = new Uint8Array(lab.length)
+  const fondo = new Uint8Array(ancho * alto)
   const pila = []
-  for (let i = 0; i < lab.length; i++) {
+  for (let i = 0; i < fondo.length; i++) {
     if (enBanda(i) && cercania(i) < tolerancia) {
       fondo[i] = 1
       pila.push(i)
@@ -251,26 +352,40 @@ function refinar(mascaraInicial, lab, ancho, alto, enBanda) {
   return mascara
 }
 
-export function segmentar(imagen) {
-  const { colores, ancho, alto } = achicar(imagen)
+// Correccion - Poll: fallaba con fondos degradados, sombras, texturas y objetos chicos
+export function segmentar(imagen, lado = LADO) {
+  const { colores, ancho, alto } = achicar(imagen, lado)
+  const escalaPixeles = Math.max(ancho, alto) / 256
+  const banda = Math.max(BANDA, Math.round(BANDA * escalaPixeles))
   const lab = colores.map(rgbALab)
-  const bordes = detectarBordes(lab, ancho, alto)
+  // La separacion se calcula sobre una copia suavizada (en proporcion a la
+  // resolucion), para que la textura del fondo no confunda; los colores que
+  // se devuelven son los originales.
+  const suave = suavizarColores(lab, ancho, alto, Math.max(1, Math.round(escalaPixeles)))
+  const bordes = detectarBordes(suave, ancho, alto)
   const enBanda = (i) => {
     const [x, y] = [i % ancho, Math.floor(i / ancho)]
-    return x < BANDA || y < BANDA || x >= ancho - BANDA || y >= alto - BANDA
+    return x < banda || y < banda || x >= ancho - banda || y >= alto - banda
   }
 
-  // Modelo del fondo con los colores del borde.
-  const muestra = []
-  for (let i = 0; i < lab.length; i++) if (enBanda(i)) muestra.push(lab[i])
-  const { centros, grupos } = kmedias(muestra, 4)
+  // Modelo del fondo con los colores del borde: sus grupos de colores y la
+  // superficie de color que predice el fondo en cada punto (para degrades).
+  const indicesBorde = []
+  for (let i = 0; i < suave.length; i++) if (enBanda(i)) indicesBorde.push(i)
+  const { centros } = kmedias(indicesBorde.map((i) => suave[i]), 4)
+  const prediccion = ajustarFondo(suave, indicesBorde, ancho, alto)
+  const cercania = (i) => {
+    let minima = distanciaConSombra(suave[i], prediccion(i))
+    for (const centro of centros) minima = Math.min(minima, distanciaConSombra(suave[i], centro))
+    return minima
+  }
   // Que tan distinto puede ser un pixel y seguir pareciendo fondo: depende de
   // cuanto varia el propio fondo (un cielo liso tolera poco, un pasto mucho).
-  const desvio = muestra.reduce((s, color, i) => s + distancia(color, centros[grupos[i]]), 0) / muestra.length
+  const desvio = indicesBorde.reduce((s, i) => s + cercania(i), 0) / indicesBorde.length
   const tolerancia = Math.min(28, Math.max(7, desvio * 2.5))
 
-  const inicial = limpiar(inundarFondo(lab, bordes, ancho, alto, enBanda, centros, tolerancia), ancho, alto)
-  let mascara = limpiar(refinar(inicial, lab, ancho, alto, enBanda), ancho, alto)
+  const inicial = limpiar(inundarFondo(bordes, ancho, alto, enBanda, cercania, tolerancia), ancho, alto)
+  let mascara = limpiar(refinar(inicial, suave, ancho, alto, enBanda), ancho, alto)
 
   // Si el refinado cambio el objeto de forma exagerada, se confia en el primer recorte.
   const area = (m) => m.reduce((s, valor) => s + valor, 0)
@@ -279,6 +394,6 @@ export function segmentar(imagen) {
 
   // Si el "objeto" es casi nada o casi toda la foto, no se separo bien.
   const ocupado = area(mascara) / mascara.length
-  if (ocupado < 0.03 || ocupado > 0.92) return null
+  if (ocupado < OBJETO_MINIMO || ocupado > 0.92) return null
   return { mascara, colores, lab, ancho, alto, fondo: centros }
 }

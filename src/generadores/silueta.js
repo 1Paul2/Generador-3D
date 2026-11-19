@@ -27,8 +27,8 @@ const LAMINA = 0.006
 // Cuanto mas clara (en luz Lab) tiene que ser la franja central que los bordes
 // para considerar redondo un objeto por su sombreado.
 const REDONDEZ_MINIMA = 6
-const SUAVIZADO = 3 // pasadas para borrar los escalones de los pixeles
-const ANCHO_SURCO = 2 // pixeles a cada lado de la junta entre dos partes
+const SUAVIZADO = 3 // pasadas para borrar los escalones de los pixeles (en 256)
+const ANCHO_SURCO = 2 // pixeles a cada lado de la junta entre dos partes (en 256)
 const PROFUNDIDAD_SURCO = 0.12 // cuanto se hunde la junta, como fraccion de la altura
 
 // Rectangulo que encierra al objeto en la mascara.
@@ -214,7 +214,7 @@ function distanciaAlBorde(dentro, ancho, alto) {
 
 // Promedia cada vertice con sus vecinos unas pasadas, para que el contorno
 // no muestre los escalones de los pixeles.
-function suavizarMalla(posiciones, indices) {
+function suavizarMalla(posiciones, indices, pasadas) {
   const cantidad = posiciones.length / 3
   const vecinos = Array.from({ length: cantidad }, () => new Set())
   for (let t = 0; t < indices.length; t += 3) {
@@ -223,7 +223,7 @@ function suavizarMalla(posiciones, indices) {
     vecinos[b].add(a).add(c)
     vecinos[c].add(a).add(b)
   }
-  for (let pasada = 0; pasada < SUAVIZADO; pasada++) {
+  for (let pasada = 0; pasada < pasadas; pasada++) {
     const copia = posiciones.slice()
     for (let v = 0; v < cantidad; v++) {
       if (!vecinos[v].size) continue
@@ -287,7 +287,7 @@ function alturasPorEsferas(dentro, distancias, ancho, alto) {
 
 // Surcos entre partes: donde cambia la region de color (vidrio y carroceria,
 // cuello y cuerpo) la superficie se hunde un poco, como una junta real.
-function marcarSurcos(alturas, dentro, ancho, alto, regionDe) {
+function marcarSurcos(alturas, dentro, ancho, alto, regionDe, anchoSurco) {
   const lejania = new Float32Array(alturas.length).fill(Infinity)
   const cola = []
   for (let y = 0; y < alto; y++) {
@@ -304,10 +304,10 @@ function marcarSurcos(alturas, dentro, ancho, alto, regionDe) {
       }
     }
   }
-  // Distancia a la junta mas cercana, recorriendo de a un pixel hasta ANCHO_SURCO.
+  // Distancia a la junta mas cercana, recorriendo de a un pixel hasta anchoSurco.
   for (let paso = 0; paso < cola.length; paso++) {
     const i = cola[paso]
-    if (lejania[i] >= ANCHO_SURCO) continue
+    if (lejania[i] >= anchoSurco) continue
     for (const v of [i - 1, i + 1, i - ancho, i + ancho]) {
       if (v >= 0 && v < alturas.length && dentro[v] && lejania[v] === Infinity) {
         lejania[v] = lejania[i] + 1
@@ -316,7 +316,7 @@ function marcarSurcos(alturas, dentro, ancho, alto, regionDe) {
     }
   }
   for (let i = 0; i < alturas.length; i++) {
-    if (lejania[i] <= ANCHO_SURCO) alturas[i] *= 1 - PROFUNDIDAD_SURCO * (1 - lejania[i] / (ANCHO_SURCO + 1))
+    if (lejania[i] <= anchoSurco) alturas[i] *= 1 - PROFUNDIDAD_SURCO * (1 - lejania[i] / (anchoSurco + 1))
   }
 }
 
@@ -335,13 +335,15 @@ function inflar(segmento, caja, escala, colorDe, regionDe, plano) {
     }
   }
   const distancias = distanciaAlBorde(dentro, ancho, alto)
+  // Los anchos en pixeles se escalan con la resolucion de la grilla.
+  const escalaPixeles = Math.max(1, Math.max(segmento.ancho, segmento.alto) / 256)
   let levantar
   if (plano) {
     const lamina = LAMINA * Math.max(ancho, alto)
     levantar = (i) => (distancias[i] <= 1 ? 0 : lamina)
   } else {
     const alturas = alturasPorEsferas(dentro, distancias, ancho, alto)
-    marcarSurcos(alturas, dentro, ancho, alto, (x, y) => regionDe(x + caja.x0, y + caja.y0))
+    marcarSurcos(alturas, dentro, ancho, alto, (x, y) => regionDe(x + caja.x0, y + caja.y0), Math.round(ANCHO_SURCO * escalaPixeles))
     levantar = (i) => GROSOR * alturas[i]
   }
 
@@ -391,7 +393,7 @@ function inflar(segmento, caja, escala, colorDe, regionDe, plano) {
       else if (ea && eb && ec) triangulo(a, c, b)
     }
   }
-  suavizarMalla(posiciones, indices)
+  suavizarMalla(posiciones, indices, Math.round(SUAVIZADO * escalaPixeles))
   return armarGeometria(posiciones, colores, indices)
 }
 

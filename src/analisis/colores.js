@@ -15,7 +15,7 @@ import { kmedias } from '../utils/kmedias.js'
 const COLORES_MINIMOS = 8
 const COLORES_MAXIMOS = 48
 const MUESTRA = 6000 // pixeles con que se calcula la paleta (despues se asignan todos)
-const CONTORNO = 2 // ancho, en pixeles, de la banda del contorno que se corrige
+const CONTORNO = 2 // ancho, en pixeles, de la banda del contorno que se corrige (en 256)
 
 export function colorearPorPixel({ mascara, colores, lab, ancho, alto }) {
   const indices = []
@@ -57,11 +57,12 @@ export function colorearPorPixel({ mascara, colores, lab, ancho, alto }) {
 
   // Contorno: los pixeles a menos de CONTORNO pasos del fondo toman el promedio
   // de los pixeles que estan justo mas adentro de esa banda.
-  const pasos = distanciaAlFondo(mascara, ancho, alto, CONTORNO + 1)
+  const contorno = Math.round(CONTORNO * Math.max(1, Math.max(ancho, alto) / 256))
+  const pasos = distanciaAlFondo(mascara, ancho, alto, contorno + 1)
   for (const i of indices) {
-    if (pasos[i] > CONTORNO) continue
+    if (pasos[i] > contorno) continue
     const [x, y] = [i % ancho, Math.floor(i / ancho)]
-    const radio = CONTORNO + 2
+    const radio = contorno + 2
     const suma = [0, 0, 0]
     let cuenta = 0
     for (let dy = -radio; dy <= radio; dy++) {
@@ -69,7 +70,7 @@ export function colorearPorPixel({ mascara, colores, lab, ancho, alto }) {
         const [xx, yy] = [x + dx, y + dy]
         if (xx < 0 || yy < 0 || xx >= ancho || yy >= alto) continue
         const j = yy * ancho + xx
-        if (!mascara[j] || pasos[j] <= CONTORNO) continue
+        if (!mascara[j] || pasos[j] <= contorno) continue
         for (let c = 0; c < 3; c++) suma[c] += resultado[j * 3 + c]
         cuenta++
       }
