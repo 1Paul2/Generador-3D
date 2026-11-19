@@ -35,7 +35,8 @@
     padding: 8px 14px;
     border-radius: 8px;
     border: 1px solid var(--border);
-      color: var(--text-h);
+    background: var(--code-bg);
+    color: var(--text-h);
 
     &:focus {
       outline: 2px solid var(--accent-border);
@@ -73,7 +74,6 @@
   position: relative;
   height: 65vh;
   min-height: 360px;
-  background: var(--code-bg);
 
   .aviso {
     position: absolute;
@@ -95,6 +95,11 @@
 
   button {
     padding: 4px 12px;
+  }
+
+  .acciones {
+    display: flex;
+    gap: 8px;
   }
 
   @media (max-width: 720px) {

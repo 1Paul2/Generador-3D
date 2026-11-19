@@ -30,6 +30,12 @@ function App() {
     setMensaje('')
   }
 
+  // Quita el modelo y los destellos vuelven a flotar libres.
+  function borrar() {
+    setModelo(null)
+    setProgreso(0)
+    setMensaje('')
+  }
 
   return (
     <>
@@ -52,12 +58,17 @@ function App() {
             <span>
               {progreso < 100 ? `Armando: ${progreso} %` : 'Listo'}
             </span>
-            <button
-              type="button"
-              onClick={() => generar(modelo.texto, modelo.intento + 1)}
-            >
-              Regenerar
-            </button>
+            <div className="acciones">
+              <button
+                type="button"
+                onClick={() => generar(modelo.texto, modelo.intento + 1)}
+              >
+                Regenerar
+              </button>
+              <button type="button" onClick={borrar}>
+                Borrar
+              </button>
+            </div>
           </>
         ) : (
           <span>Sin modelo</span>
