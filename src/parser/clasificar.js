@@ -30,6 +30,16 @@ const PISTAS = {
   costa: ['playa', 'costa', 'litoral', 'bahia'],
   llano: ['llanura', 'pradera', 'llano', 'valle'],
   meseta: ['meseta', 'altiplano'],
+  cuadrupedo: [
+    'mamifero', 'canido', 'felino', 'equino', 'bovino', 'cuadrupedo', 'raza de perro',
+    'raza de gato', 'roedor', 'ungulado',
+  ],
+  ave: ['ave', 'pajaro'],
+  pez: ['pez', 'peces'],
+  persona: [
+    'ser humano', 'persona', 'actor', 'actriz', 'cantante', 'futbolista', 'politico',
+    'escritor', 'escritora', 'pintor', 'cientifico', 'deportista', 'musico', 'presidente',
+  ],
   cilindro: [
     'cilindro', 'cilindrico', 'cilindrica', 'tubo', 'lata', 'botella', 'vaso', 'tronco',
     'barril',

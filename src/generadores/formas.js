@@ -4,6 +4,7 @@ import { crearRuido } from '../utils/ruido.js'
 import { crearArbol } from './arbol.js'
 import { aplicarOclusion, calcularOclusion } from './oclusion.js'
 import { crearDesdeSilueta } from './silueta.js'
+import { crearSer, SERES } from './seres.js'
 import { crearTerreno, TERRENOS } from './terreno.js'
 
 // Posicion de la camara al empezar.
@@ -174,7 +175,8 @@ function ajustarModelo(original, tamano) {
 // Elige como construir la cosa, de lo mas fiel a lo mas general:
 //   1. Un modelo 3D real descargado (receta.modelo), pintado con los colores
 //      identificados en la foto.
-//   2. Un paisaje como terreno, o un arbol por ramificacion.
+//   2. Un paisaje como terreno, un arbol por ramificacion o un ser vivo por
+//      su plan corporal (cuadrupedo, ave, pez, persona).
 //   3. La silueta identificada en la foto, hecha 3D por torno o inflado.
 //   4. Una figura supercuadrica (formas abstractas o cosas sin foto).
 // apariencia: { segmento, regiones } si se pudo estudiar una foto, { imagen }
@@ -193,6 +195,7 @@ export function crearForma(receta, apariencia, random) {
   }
   if (TERRENOS.includes(receta.tipo)) return { ...crearTerreno(receta, apariencia, random), metodo: 'terreno' }
   if (receta.tipo === 'arbol') return { ...crearArbol(receta, apariencia, random), metodo: 'arbol' }
+  if (SERES.includes(receta.tipo)) return { ...crearSer(receta, apariencia), metodo: 'ser' }
   if (apariencia.segmento) return crearDesdeSilueta(apariencia.segmento, apariencia.regiones, receta)
 
   const figura = FIGURAS[receta.tipo]

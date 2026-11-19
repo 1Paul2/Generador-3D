@@ -54,6 +54,47 @@ const FORMAS = {
   acantilado: 'acantilado',
   playa: 'costa',
   costa: 'costa',
+  // Seres vivos: el tipo es el plan corporal; la palabra dice la especie.
+  perro: 'cuadrupedo',
+  perra: 'cuadrupedo',
+  cachorro: 'cuadrupedo',
+  gato: 'cuadrupedo',
+  gata: 'cuadrupedo',
+  caballo: 'cuadrupedo',
+  yegua: 'cuadrupedo',
+  vaca: 'cuadrupedo',
+  toro: 'cuadrupedo',
+  oveja: 'cuadrupedo',
+  cordero: 'cuadrupedo',
+  cerdo: 'cuadrupedo',
+  chancho: 'cuadrupedo',
+  león: 'cuadrupedo',
+  leona: 'cuadrupedo',
+  tigre: 'cuadrupedo',
+  lobo: 'cuadrupedo',
+  zorro: 'cuadrupedo',
+  oso: 'cuadrupedo',
+  conejo: 'cuadrupedo',
+  ratón: 'cuadrupedo',
+  elefante: 'cuadrupedo',
+  jirafa: 'cuadrupedo',
+  ave: 'ave',
+  pájaro: 'ave',
+  paloma: 'ave',
+  gallina: 'ave',
+  pato: 'ave',
+  águila: 'ave',
+  loro: 'ave',
+  pingüino: 'ave',
+  pez: 'pez',
+  pescado: 'pez',
+  tiburón: 'pez',
+  persona: 'persona',
+  hombre: 'persona',
+  mujer: 'persona',
+  niño: 'persona',
+  niña: 'persona',
+  humano: 'persona',
 }
 
 // Palabras que nombran una forma abstracta y no una cosa real: para estas no
@@ -89,6 +130,10 @@ export const NOMBRES_FIGURAS = {
   canon: 'cañón',
   acantilado: 'acantilado',
   costa: 'costa',
+  cuadrupedo: 'cuadrúpedo',
+  ave: 'ave',
+  pez: 'pez',
+  persona: 'persona',
 }
 
 const COLORES = {
@@ -148,14 +193,17 @@ const TAMANOS_NORMALIZADOS = sinTildes(TAMANOS)
 
 // Busca la palabra tal cual y sin plural ("cubos" -> "cubo", "naranjas" -> "naranja").
 function buscar(diccionario, palabra) {
-  return (
-    diccionario[palabra] ??
-    diccionario[palabra.replace(/s$/, '')] ??
-    diccionario[palabra.replace(/es$/, '')]
-  )
+  return diccionario[clave(diccionario, palabra)]
 }
 
-// Devuelve { tipo, color, colorElegido, tamano, desconocidas, cosas }:
+// La forma de la palabra que esta en el diccionario: "perros" -> "perro".
+function clave(diccionario, palabra) {
+  return [palabra, palabra.replace(/s$/, ''), palabra.replace(/es$/, '')].find((p) => p in diccionario)
+}
+
+// Devuelve { tipo, palabra, color, colorElegido, tamano, desconocidas, cosas }:
+//   palabra: la palabra del diccionario que nombro la forma ("perro"), que
+//     sirve para elegir la especie de un ser vivo.
 //   colorElegido: si el texto nombra un color (si no, se usa la foto de Wikipedia).
 //   desconocidas: palabras que no estan en el diccionario. Si ninguna palabra
 //     nombra una figura, tipo es null y estas se averiguan en Wikipedia.
@@ -178,7 +226,11 @@ export function interpretar(texto) {
     const color = buscar(COLORES_NORMALIZADOS, palabra)
     const tamano = buscar(TAMANOS_NORMALIZADOS, palabra)
 
-    receta.tipo ??= forma ?? null
+    if (forma && !receta.tipo) {
+      receta.tipo = forma
+      // Que palabra nombro la forma (sin tildes y en singular), para saber la especie.
+      receta.palabra = clave(FORMAS_NORMALIZADAS, palabra)
+    }
     receta.color = color ?? receta.color
     receta.colorElegido ||= Boolean(color)
     receta.tamano = tamano ?? receta.tamano
