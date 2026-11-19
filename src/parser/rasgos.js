@@ -93,6 +93,39 @@ export function leerEstacion(...textos) {
   return null
 }
 
+// Cosas que tienen luz propia o brillan, y como lo hacen.
+//   estrella: emite luz y lanza llamaradas hacia afuera (el Sol).
+//   fuego: luz calida que parpadea y chispas que suben.
+//   lampara: un halo de luz quieto.
+//   brillante: superficie pulida (metal, cristal) con destellos que titilan.
+const LUCES = {
+  estrella: ['estrella', 'sol', 'astro', 'supernova', 'enana amarilla', 'enana roja'],
+  fuego: ['fuego', 'llama', 'hoguera', 'fogata', 'antorcha', 'incendio', 'vela', 'brasa'],
+  lampara: ['lampara', 'bombilla', 'foco', 'farol', 'neon', 'linterna', 'luciernaga', 'faro'],
+  brillante: [
+    'oro', 'dorad', 'plata', 'platead', 'metal', 'metalic', 'cromo', 'acero', 'cristal', 'vidrio',
+    'diamante', 'gema', 'joya', 'espejo', 'hielo', 'trofeo', 'moneda', 'anillo', 'corona',
+  ],
+}
+
+// Lee que tipo de luz tiene la cosa ("sol" -> estrella, "anillo de oro" ->
+// brillante). Se mira solo lo que nombra a la cosa, como el volumen; gana la
+// primera palabra encontrada. Devuelve null si no brilla.
+export function leerLuz(...textos) {
+  for (const texto of textos) {
+    const limpio = normalizar(texto ?? '')
+    let mejor = null
+    for (const [luz, raices] of Object.entries(LUCES)) {
+      for (const raiz of raices) {
+        const posicion = limpio.search(new RegExp(`\\b${raiz}(e?s)?\\b`))
+        if (posicion !== -1 && (!mejor || posicion < mejor.posicion)) mejor = { luz, posicion }
+      }
+    }
+    if (mejor) return mejor.luz
+  }
+  return null
+}
+
 // Busca una altura en metros: "3432 m", "5.895 metros", "2 437 msnm".
 function leerAltitud(texto) {
   const encontrado = texto.match(/\b(\d{1,2}[.\s]?\d{3})\s*(m\b|metros|msnm|m s n m)/)
