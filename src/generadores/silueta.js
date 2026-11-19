@@ -204,6 +204,7 @@ function suavizarMalla(posiciones, indices) {
 //      alta que lo cubre.
 // Asi cada parte tiene su propio grosor: una pata fina queda fina y el cuerpo
 // grueso queda grueso, en lugar de inflar todo con el mismo radio.
+// Correccion - Poll: partes que se ensanchan quedaban sin altura en su linea central y el objeto se rajaba
 function alturasPorEsferas(dentro, distancias, ancho, alto) {
   const alturas = new Float32Array(dentro.length)
   for (let y = 0; y < alto; y++) {
@@ -233,8 +234,14 @@ function alturasPorEsferas(dentro, distancias, ancho, alto) {
       }
     }
   }
-  // El borde queda en cero para que el frente y la espalda se cierren.
-  for (let i = 0; i < alturas.length; i++) if (distancias[i] <= 1) alturas[i] = 0
+  for (let i = 0; i < alturas.length; i++) {
+    // Cada pixel es, como minimo, el centro de su propia esfera. Sin esto, la
+    // linea central de una parte que se ensancha (una pata hacia el cuerpo) no
+    // cuenta como eje, queda sin altura y el objeto se raja ahi.
+    if (dentro[i]) alturas[i] = Math.max(alturas[i], distancias[i])
+    // El borde queda en cero para que el frente y la espalda se cierren.
+    if (distancias[i] <= 1) alturas[i] = 0
+  }
   return alturas
 }
 
@@ -278,6 +285,7 @@ function marcarSurcos(alturas, dentro, ancho, alto, regionDe) {
 // donde es angosta (la punta de una hoja), el frente y la espalda quedaban
 // tan pegados que se cruzaban y se veia una rejilla.
 // Correccion - Poll: las laminas salian abombadas y con una rejilla en las partes angostas
+// Correccion - Poll: el frente y la espalda se pegaban en cualquier pixel sin altura, no solo en el borde
 function inflar(segmento, caja, escala, colorDe, regionDe, plano) {
   const { ancho, alto } = caja
   const dentro = new Uint8Array(ancho * alto)
@@ -311,8 +319,9 @@ function inflar(segmento, caja, escala, colorDe, regionDe, plano) {
       frente[i] = posiciones.length / 3
       posiciones.push(px, py, z * escala)
       colores.push(...color)
-      // En el borde el frente y la espalda comparten el vertice, asi se cierran.
-      if (z === 0) {
+      // Solo en el borde real el frente y la espalda comparten el vertice, asi
+      // se cierran; adentro siempre van separados.
+      if (distancias[i] <= 1) {
         atras[i] = frente[i]
       } else {
         atras[i] = posiciones.length / 3
