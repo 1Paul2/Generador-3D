@@ -7,6 +7,7 @@ import { crearDesdeSilueta } from './silueta.js'
 import { colorearPorPixel } from '../analisis/colores.js'
 import { crearTexturaObjeto } from '../analisis/textura.js'
 import { crearSer, SERES } from './seres.js'
+import { crearCultivo, CULTIVOS } from './cultivos.js'
 import { crearTerreno, TERRENOS } from './terreno.js'
 
 // Posicion de la camara al empezar.
@@ -475,8 +476,9 @@ function aislarPieza(segmento) {
 // Elige como construir la cosa, de lo mas fiel a lo mas general:
 //   1. Un modelo 3D real descargado (receta.modelo), pintado con los colores
 //      de la foto alineados pixel por pixel.
-//   2. Un paisaje como terreno, un arbol por ramificacion o un ser vivo por
-//      su plan corporal (cuadrupedo, ave, pez, persona).
+//   2. Un paisaje como terreno, un arbol por ramificacion, un ser vivo por
+//      su plan corporal (cuadrupedo, ave, pez, persona) o una planta de
+//      cultivo con su anatomia (yuca, banano, pina).
 //   3. Si la forma es una figura conocida (una estrella es una esfera), la
 //      figura exacta, pintada con los colores de la foto alineados.
 //   4. Si no, la silueta identificada en la foto, hecha 3D por torno o inflado.
@@ -527,6 +529,7 @@ export function crearForma(receta, apariencia, random) {
   if (TERRENOS.includes(receta.tipo)) return { ...crearTerreno(receta, apariencia, random), metodo: 'terreno' }
   if (receta.tipo === 'arbol') return { ...crearArbol(receta, apariencia, random), metodo: 'arbol' }
   if (SERES.includes(receta.tipo)) return { ...crearSer(receta, apariencia), metodo: 'ser' }
+  if (CULTIVOS.includes(receta.tipo)) return { ...crearCultivo(receta, random), metodo: 'cultivo' }
   if (apariencia.segmento && (!FIGURAS[receta.tipo] || SILUETA_PRIMERO.has(receta.tipo))) {
     return crearDesdeSilueta(apariencia.segmento, apariencia.regiones, receta)
   }

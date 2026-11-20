@@ -259,7 +259,10 @@ export default function Destellos({ modelo, desarmar, onProgreso, onDesarmado })
           ) : (
             <meshStandardMaterial
               vertexColors
-              roughness={brillante ? 0.22 : 1}
+              // Las hojas son laminas finas: se ven de los dos lados y tienen
+              // algo de brillo (la cera de su superficie).
+              side={modelo.metodo === 'cultivo' ? THREE.DoubleSide : THREE.FrontSide}
+              roughness={brillante ? 0.22 : modelo.metodo === 'cultivo' ? 0.7 : 1}
               metalness={brillante ? 0.55 : 0}
               transparent
               opacity={0}
