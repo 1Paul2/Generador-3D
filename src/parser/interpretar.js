@@ -29,17 +29,115 @@ const FORMAS = {
   rueda: 'disco',
   plato: 'disco',
   huevo: 'huevo',
+  piedra: 'roca',
+  roca: 'roca',
+  peñasco: 'roca',
+  guijarro: 'roca',
   torre: 'torre',
   edificio: 'edificio',
   montaña: 'montana',
   volcán: 'volcan',
   árbol: 'arbol',
   pino: 'arbol',
+  abeto: 'arbol',
+  ciprés: 'arbol',
+  cerezo: 'arbol',
+  almendro: 'arbol',
+  manzano: 'arbol',
+  sauce: 'arbol',
+  olivo: 'arbol',
+  arce: 'arbol',
   colina: 'colina',
   cerro: 'colina',
   isla: 'isla',
   duna: 'duna',
   desierto: 'duna',
+  llano: 'llano',
+  pradera: 'llano',
+  meseta: 'meseta',
+  cascada: 'cascada',
+  catarata: 'cascada',
+  río: 'rio',
+  arroyo: 'rio',
+  lago: 'lago',
+  laguna: 'lago',
+  cañón: 'canon',
+  barranco: 'canon',
+  acantilado: 'acantilado',
+  playa: 'costa',
+  agua: 'costa',
+  mar: 'costa',
+  océano: 'costa',
+  costa: 'costa',
+  // Seres vivos: el tipo es el plan corporal; la palabra dice la especie.
+  perro: 'cuadrupedo',
+  perra: 'cuadrupedo',
+  cachorro: 'cuadrupedo',
+  gato: 'cuadrupedo',
+  gata: 'cuadrupedo',
+  caballo: 'cuadrupedo',
+  yegua: 'cuadrupedo',
+  vaca: 'cuadrupedo',
+  toro: 'cuadrupedo',
+  buey: 'cuadrupedo',
+  novillo: 'cuadrupedo',
+  ternero: 'cuadrupedo',
+  ternera: 'cuadrupedo',
+  vaquilla: 'cuadrupedo',
+  cebú: 'cuadrupedo',
+  brahman: 'cuadrupedo',
+  potro: 'cuadrupedo',
+  potranca: 'cuadrupedo',
+  oveja: 'cuadrupedo',
+  cordero: 'cuadrupedo',
+  cerdo: 'cuadrupedo',
+  chancho: 'cuadrupedo',
+  león: 'cuadrupedo',
+  leona: 'cuadrupedo',
+  tigre: 'cuadrupedo',
+  leopardo: 'cuadrupedo',
+  jaguar: 'cuadrupedo',
+  guepardo: 'cuadrupedo',
+  pantera: 'cuadrupedo',
+  cebra: 'cuadrupedo',
+  lobo: 'cuadrupedo',
+  zorro: 'cuadrupedo',
+  oso: 'cuadrupedo',
+  conejo: 'cuadrupedo',
+  ratón: 'cuadrupedo',
+  elefante: 'cuadrupedo',
+  jirafa: 'cuadrupedo',
+  ave: 'ave',
+  pájaro: 'ave',
+  paloma: 'ave',
+  gallina: 'ave',
+  pato: 'ave',
+  águila: 'ave',
+  loro: 'ave',
+  pingüino: 'ave',
+  pez: 'pez',
+  pescado: 'pez',
+  tiburón: 'pez',
+  // Cultivos: el tipo es 'cultivo'; la palabra dice cual (ver
+  // generadores/cultivos.js) y si se pide la planta o la cosecha.
+  ...Object.fromEntries(
+    [
+      'yuca', 'mandioca', 'banano', 'banana', 'guineo', 'cambur', 'plátano', 'bananal', 'platanal',
+      'piña', 'ananá', 'piñal', 'café', 'cafeto', 'cafetal', 'caña', 'cañal', 'cañaveral', 'maíz',
+      'mazorca', 'elote', 'choclo', 'milpa', 'maizal', 'frijol', 'frijolar', 'poroto', 'tomate',
+      'tomatera', 'arroz', 'arrozal', 'papa', 'patata', 'chile', 'pimiento', 'pimentón', 'cacao',
+      'cacaotal', 'palma', 'palmera', 'palmar', 'naranja', 'naranjo', 'naranjal', 'limón', 'limonero', 'mango',
+      'aguacate', 'aguacatal', 'papaya', 'papayo', 'chayote', 'chayotera', 'melón', 'sandía', 'coco', 'cocotero',
+      'cocal', 'pejibaye', 'pejibayal', 'guanacaste', 'ceiba', 'cortez', 'cortés', 'roble', 'teca', 'melina', 'poró',
+      'cedro', 'guarumo', 'indio',
+    ].map((palabra) => [palabra, 'cultivo']),
+  ),
+  persona: 'persona',
+  hombre: 'persona',
+  mujer: 'persona',
+  niño: 'persona',
+  niña: 'persona',
+  humano: 'persona',
 }
 
 // Palabras que nombran una forma abstracta y no una cosa real: para estas no
@@ -59,6 +157,7 @@ export const NOMBRES_FIGURAS = {
   cojin: 'cojín',
   disco: 'disco',
   huevo: 'huevo',
+  roca: 'roca',
   torre: 'torre',
   edificio: 'edificio',
   montana: 'montaña',
@@ -67,6 +166,19 @@ export const NOMBRES_FIGURAS = {
   colina: 'colina',
   isla: 'isla',
   duna: 'dunas',
+  llano: 'llano',
+  meseta: 'meseta',
+  cascada: 'cascada',
+  rio: 'río',
+  lago: 'lago',
+  canon: 'cañón',
+  acantilado: 'acantilado',
+  costa: 'costa',
+  cuadrupedo: 'cuadrúpedo',
+  ave: 'ave',
+  pez: 'pez',
+  persona: 'persona',
+  cultivo: 'cultivos (mata de banano, café, maíz, frijol, tomate...)',
 }
 
 const COLORES = {
@@ -86,6 +198,14 @@ const COLORES = {
   blanca: '#eeeeee',
   negro: '#3a3a3a',
   negra: '#3a3a3a',
+  oro: '#d4a73c',
+  dorado: '#d4a73c',
+  dorada: '#d4a73c',
+  plata: '#c4c8cf',
+  plateado: '#c4c8cf',
+  plateada: '#c4c8cf',
+  bronce: '#b0763a',
+  cobre: '#b8673c',
 }
 
 const TAMANOS = {
@@ -101,6 +221,13 @@ const TAMANOS = {
 
 // Palabras de relleno que no describen nada y no vale la pena buscar.
 const RELLENO = new Set(['un', 'una', 'unos', 'unas', 'el', 'la', 'los', 'las', 'de', 'del', 'con', 'y', 'en'])
+
+// Palabras con las que un agricultor pide la planta y no la cosecha ('mata de
+// banano', 'planta de tomate', 'arbol de cacao', 'palo de mango'), o la cosecha ('racimo de
+// banano', 'granos de cafe'). Tampoco se buscan en Wikipedia.
+const PIDEN_PLANTA = new Set(['mata', 'palo', 'planta', 'arbol', 'arbusto', 'cultivo', 'plantacion', 'plantio', 'sembrado', 'siembra', 'sembradio'])
+const PIDEN_RACIMO = new Set(['racimo', 'mano'])
+const PIDEN_FRUTO = new Set(['fruto', 'fruta', 'grano', 'cosecha'])
 
 export const FORMAS_DISPONIBLES = Object.values(NOMBRES_FIGURAS)
 
@@ -122,23 +249,30 @@ function sinTildes(diccionario) {
 
 const FORMAS_NORMALIZADAS = sinTildes(FORMAS)
 const COLORES_NORMALIZADOS = sinTildes(COLORES)
+
+// Colores que tambien son el nombre de una cosa.
+const COLORES_QUE_SON_COSAS = new Set(['naranja', 'rosa', 'oro', 'plata', 'bronce', 'cobre'])
 const TAMANOS_NORMALIZADOS = sinTildes(TAMANOS)
 
 // Busca la palabra tal cual y sin plural ("cubos" -> "cubo", "naranjas" -> "naranja").
 function buscar(diccionario, palabra) {
-  return (
-    diccionario[palabra] ??
-    diccionario[palabra.replace(/s$/, '')] ??
-    diccionario[palabra.replace(/es$/, '')]
-  )
+  return diccionario[clave(diccionario, palabra)]
 }
 
-// Devuelve { tipo, color, colorElegido, tamano, desconocidas, cosas }:
+// La forma de la palabra que esta en el diccionario: "perros" -> "perro".
+function clave(diccionario, palabra) {
+  return [palabra, palabra.replace(/s$/, ''), palabra.replace(/es$/, '')].find((p) => p in diccionario)
+}
+
+// Devuelve { tipo, palabra, color, colorElegido, tamano, desconocidas, cosas }:
+//   palabra: la palabra del diccionario que nombro la forma ("perro"), que
+//     sirve para elegir la especie de un ser vivo.
 //   colorElegido: si el texto nombra un color (si no, se usa la foto de Wikipedia).
 //   desconocidas: palabras que no estan en el diccionario. Si ninguna palabra
 //     nombra una figura, tipo es null y estas se averiguan en Wikipedia.
 //   cosas: palabras que nombran algo real (no una forma abstracta como "cubo"),
 //     para buscar su foto: "torre eiffel", "volcán", "lata".
+// Correccion - Poll: "naranja" solo se tomaba como color y no se construia nada
 export function interpretar(texto) {
   const palabras = texto.toLowerCase().split(/\s+/).filter(Boolean)
   const receta = {
@@ -150,13 +284,24 @@ export function interpretar(texto) {
     cosas: [],
   }
 
+  const cultivos = []
   for (const original of palabras) {
     const palabra = normalizar(original)
+    const singular = [palabra, palabra.replace(/s$/, ''), palabra.replace(/es$/, '')]
+    if (singular.some((p) => PIDEN_PLANTA.has(p))) receta.planta = true
+    if (singular.some((p) => PIDEN_RACIMO.has(p))) receta.racimo = true
+    if (singular.some((p) => PIDEN_FRUTO.has(p))) receta.fruto = true
+    if (singular.some((p) => PIDEN_PLANTA.has(p) || PIDEN_RACIMO.has(p) || PIDEN_FRUTO.has(p)) && !buscar(FORMAS_NORMALIZADAS, palabra)) continue
     const forma = buscar(FORMAS_NORMALIZADAS, palabra)
+    if (forma === 'cultivo') cultivos.push(clave(FORMAS_NORMALIZADAS, palabra))
     const color = buscar(COLORES_NORMALIZADOS, palabra)
     const tamano = buscar(TAMANOS_NORMALIZADOS, palabra)
 
-    receta.tipo ??= forma ?? null
+    if (forma && !receta.tipo) {
+      receta.tipo = forma
+      // Que palabra nombro la forma (sin tildes y en singular), para saber la especie.
+      receta.palabra = clave(FORMAS_NORMALIZADAS, palabra)
+    }
     receta.color = color ?? receta.color
     receta.colorElegido ||= Boolean(color)
     receta.tamano = tamano ?? receta.tamano
@@ -165,6 +310,29 @@ export function interpretar(texto) {
     if (desconocida) receta.desconocidas.push(original)
     const geometrica = GEOMETRICAS.has(palabra) || GEOMETRICAS.has(palabra.replace(/s$/, ''))
     if (desconocida || (forma && !geometrica)) receta.cosas.push(original)
+  }
+
+  // El cultivo manda sobre la figura: "arbol de cacao" es el cacao (y su
+  // planta), no un arbol cualquiera. "Palma" o "palmera" con otra planta
+  // ("palma de coco") nombran la planta de la otra, no la palma aceitera.
+  // Correccion - Poll: "palma de coco" armaba la palma aceitera
+  if (cultivos.length) {
+    const otras = cultivos.filter((c) => !['palma', 'palmera'].includes(c))
+    const generica = otras.length > 0 && otras.length < cultivos.length
+    receta.tipo = 'cultivo'
+    receta.palabra = generica ? otras[0] : cultivos[0]
+    if (generica) receta.planta = true
+  }
+
+  // "naranja" o "rosa" solos nombran la fruta o la flor, no un color: si
+  // ninguna otra palabra dice que construir, se buscan como cosas.
+  if (!receta.tipo && !receta.cosas.length) {
+    const nombres = palabras.filter((p) => COLORES_QUE_SON_COSAS.has(normalizar(p)))
+    if (nombres.length) {
+      receta.cosas.push(...nombres)
+      receta.desconocidas.push(...nombres)
+      receta.colorElegido = false
+    }
   }
 
   return receta

@@ -138,7 +138,7 @@
 #estado {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
   padding: 12px 32px;
   border-top: 1px solid var(--border);
@@ -152,25 +152,6 @@
   .acciones {
     display: flex;
     gap: 8px;
-  }
-
-  .detalle {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    min-width: 0;
-    text-align: left;
-  }
-
-  .fuente {
-    font-family: var(--sans);
-    font-size: 13px;
-    color: var(--text);
-
-    &:hover {
-      color: var(--accent);
-    }
   }
 
   @media (max-width: 720px) {

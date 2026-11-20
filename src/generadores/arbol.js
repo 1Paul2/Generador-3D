@@ -88,7 +88,8 @@ function arbolDeHojas(escala, random, ruido, colores) {
     ramas.push(tramo(base, direccion, largo, radio, radio * 0.7))
 
     if (nivel === 0) {
-      hojas.push(mata(fin, escala * (0.9 + random() * 0.6), ruido))
+      // Sin hojas (invierno o arbol seco) solo quedan las ramas.
+      if (colores.hoja) hojas.push(pintar(sinIndice(mata(fin, escala * (0.9 + random() * 0.6), ruido)), colores.hoja(), ruido, 0.3))
       return
     }
     const hijas = 2 + Math.floor(random() * 3)
@@ -108,10 +109,9 @@ function arbolDeHojas(escala, random, ruido, colores) {
   }
 
   crecer(new THREE.Vector3(0, 0, 0), ARRIBA.clone(), 4.5 * escala, 0.55 * escala, 4)
-  return [
-    pintar(mergeGeometries(ramas.map(sinIndice)), colores.corteza, ruido, 0.15),
-    pintar(mergeGeometries(hojas.map(sinIndice)), colores.hojas, ruido, 0.3),
-  ]
+  const partes = [pintar(mergeGeometries(ramas.map(sinIndice)), colores.corteza, ruido, 0.15)]
+  if (hojas.length) partes.push(mergeGeometries(hojas))
+  return partes
 }
 
 function conifera(escala, random, ruido, colores) {
@@ -141,17 +141,38 @@ function conifera(escala, random, ruido, colores) {
   ]
 }
 
+// Colores del follaje segun la estacion. Cada mata elige uno al azar, asi
+// un arbol de otono mezcla naranjas, rojos y amarillos como uno real.
+const ESTACIONES = {
+  otono: [[205, 95, 30], [225, 150, 40], [175, 50, 30], [235, 195, 70], [150, 70, 35]],
+  primavera: [[110, 170, 70], [245, 175, 205], [250, 235, 240], [235, 150, 190]],
+}
+
+// Correccion - Poll: "arbol de otono" salia como un arbol verde normal; ahora se respeta la estacion
 export function crearArbol(receta, apariencia, random) {
   const ruido = crearRuido(random)
-  const verde = apariencia.imagen ? verdeDeFoto(apariencia.imagen) : null
+  const estacion = receta.rasgos?.estacion
+  const verde = apariencia.imagen && !estacion ? verdeDeFoto(apariencia.imagen) : null
   const elegido = receta.colorElegido
     ? [1, 3, 5].map((i) => parseInt(receta.color.slice(i, i + 2), 16))
     : null
   const tono = elegido ?? verde
+  const hojaComun = tono ? mezclar(COLOR.hojas, tono, 0.6) : COLOR.hojas
   const colores = {
     corteza: COLOR.corteza,
-    hojas: tono ? mezclar(COLOR.hojas, tono, 0.6) : COLOR.hojas,
-    hojasConifera: tono ? mezclar(COLOR.hojasConifera, tono, 0.5) : COLOR.hojasConifera,
+    // Una funcion que da el color de cada mata; null si el arbol no tiene hojas.
+    hoja:
+      estacion === 'invierno' || estacion === 'seco'
+        ? null
+        : ESTACIONES[estacion] && !elegido
+          ? () => ESTACIONES[estacion][Math.floor(random() * ESTACIONES[estacion].length)]
+          : () => hojaComun,
+    // En invierno las coniferas conservan las hojas, pero con nieve encima.
+    hojasConifera: mezclar(
+      tono ? mezclar(COLOR.hojasConifera, tono, 0.5) : COLOR.hojasConifera,
+      [240, 243, 248],
+      estacion === 'invierno' ? 0.6 : 0,
+    ),
   }
 
   const partes = receta.rasgos?.conifera

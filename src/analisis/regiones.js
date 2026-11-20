@@ -19,12 +19,12 @@ const MISMO_COLOR = 16
 const REGION_CHICA = 0.06
 const REGION_MINIMA = 0.01
 const PARECE_FONDO = 15
-const ORLA = 2 // pixeles desde el contorno que se consideran orla
+const ORLA = 2 // pixeles desde el contorno que se consideran orla (en 256)
 const MAYORIA_EN_ORLA = 0.6
 // Un pixel es dudoso si la region mas cercana no es mucho mas cercana que la
 // segunda (distancia a la primera / distancia a la segunda mayor que esto).
 const DUDA = 0.7
-const VENTANA_DUDA = 3 // radio de la ventana donde votan los vecinos seguros (7x7)
+const VENTANA_DUDA = 3 // radio de la ventana donde votan los vecinos seguros (7x7 en 256)
 const MANCHA = 0.003 // pedazos sueltos mas chicos que esta parte del objeto se absorben
 
 // Busca los pedazos conectados de cada region; los minusculos (salpicaduras)
@@ -62,6 +62,10 @@ function quitarManchas(etiquetas, indices, ancho, alto, minimo) {
 
 // Correccion - Poll: el borde difuso de la hoja salia como un laberinto de dos colores
 export function identificarRegiones({ mascara, colores, lab, ancho, alto, fondo }) {
+  // Los anchos en pixeles se escalan con la resolucion de la grilla.
+  const escalaPixeles = Math.max(1, Math.max(ancho, alto) / 256)
+  const ventana = Math.round(VENTANA_DUDA * escalaPixeles)
+  const orlaPixeles = Math.round(ORLA * escalaPixeles)
   const indices = []
   for (let i = 0; i < mascara.length; i++) if (mascara[i]) indices.push(i)
   const { centros, grupos } = kmedias(
@@ -108,8 +112,8 @@ export function identificarRegiones({ mascara, colores, lab, ancho, alto, fondo 
       if (!dudoso[i]) continue
       const [x, y] = [i % ancho, Math.floor(i / ancho)]
       const votos = new Map()
-      for (let dy = -VENTANA_DUDA; dy <= VENTANA_DUDA; dy++) {
-        for (let dx = -VENTANA_DUDA; dx <= VENTANA_DUDA; dx++) {
+      for (let dy = -ventana; dy <= ventana; dy++) {
+        for (let dx = -ventana; dx <= ventana; dx++) {
           const [xx, yy] = [x + dx, y + dy]
           if (xx < 0 || yy < 0 || xx >= ancho || yy >= alto) continue
           const j = yy * ancho + xx
@@ -146,8 +150,8 @@ export function identificarRegiones({ mascara, colores, lab, ancho, alto, fondo 
   // Que parte de cada region esta en la orla del contorno.
   const enOrla = (i) => {
     const [x, y] = [i % ancho, Math.floor(i / ancho)]
-    for (let dy = -ORLA; dy <= ORLA; dy++) {
-      for (let dx = -ORLA; dx <= ORLA; dx++) {
+    for (let dy = -orlaPixeles; dy <= orlaPixeles; dy++) {
+      for (let dx = -orlaPixeles; dx <= orlaPixeles; dx++) {
         const [xx, yy] = [x + dx, y + dy]
         if (xx < 0 || yy < 0 || xx >= ancho || yy >= alto || !mascara[yy * ancho + xx]) return true
       }

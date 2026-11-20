@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { MeshSurfaceSampler } from 'three/addons/math/MeshSurfaceSampler.js'
+import { crearMaterialFoto } from '../efectos/materialFoto.js'
+import Pelaje from './Pelaje.jsx'
 import { crearRandom } from '../utils/random.js'
 
 const CANTIDAD = 1500
@@ -154,6 +156,24 @@ export default function Destellos({ modelo, desarmar, onProgreso, onDesarmado })
   const { destinos, colores, retrasos, fin } = useMemo(() => calcularDestinos(modelo), [modelo])
   const llegadas = useMemo(() => [...retrasos].map((r) => r + VUELO).sort((a, b) => a - b), [retrasos])
 
+  // Si el modelo tiene foto, se pinta pixel por pixel con ella en alta resolucion.
+  const luzPropia = ['estrella', 'lampara'].includes(modelo?.efectos?.tipo)
+  const brillante = modelo?.efectos?.tipo === 'brillante'
+  const conFoto = useMemo(
+    () =>
+      modelo?.foto
+        ? crearMaterialFoto(modelo.foto, { basico: luzPropia, rugosidad: brillante ? 0.22 : 0.85, metal: brillante ? 0.55 : 0 })
+        : null,
+    [modelo, luzPropia, brillante],
+  )
+  useEffect(
+    () => () => {
+      conFoto?.material.dispose()
+      conFoto?.textura.dispose()
+    },
+    [conFoto],
+  )
+
   useEffect(() => {
     inicio.current = null
     llegados.current = -1
@@ -229,15 +249,30 @@ export default function Destellos({ modelo, desarmar, onProgreso, onDesarmado })
       </points>
 
       {modelo && (
-        <mesh key={modelo.id} ref={superficie} geometry={modelo.geometria}>
-          <meshStandardMaterial
-            vertexColors
-            roughness={1}
-            metalness={0}
-            transparent
-            opacity={0}
-          />
+        <mesh key={modelo.id} ref={superficie} geometry={modelo.geometria} castShadow receiveShadow>
+          {/* Lo que tiene luz propia (una estrella, una lampara) no depende de
+              la iluminacion de la escena; lo pulido (metal, cristal) refleja. */}
+          {conFoto ? (
+            <primitive object={conFoto.material} attach="material" />
+          ) : luzPropia ? (
+            <meshBasicMaterial vertexColors toneMapped={false} transparent opacity={0} />
+          ) : (
+            <meshStandardMaterial
+              vertexColors
+              // Las hojas son laminas finas: se ven de los dos lados y tienen
+              // algo de brillo (la cera de su superficie).
+              side={modelo.metodo === 'cultivo' ? THREE.DoubleSide : THREE.FrontSide}
+              roughness={brillante ? 0.22 : modelo.metodo === 'cultivo' ? 0.7 : 1}
+              metalness={brillante ? 0.55 : 0}
+              transparent
+              opacity={0}
+            />
+          )}
         </mesh>
+      )}
+      {/* Los animales llevan pelo dibujado en capas sobre la piel. */}
+      {modelo?.geometria.attributes.pelo && (
+        <Pelaje key={`pelo-${modelo.id}`} geometria={modelo.geometria} superficie={superficie} />
       )}
     </>
   )

@@ -1,29 +1,21 @@
 import { useRef, useState } from 'react'
 import Buscador from './components/Buscador.jsx'
 import Visor3D from './components/Visor3D.jsx'
-import { interpretar, FORMAS_DISPONIBLES, NOMBRES_FIGURAS } from './parser/interpretar.js'
+import { interpretar, FORMAS_DISPONIBLES } from './parser/interpretar.js'
 import { buscarFoto, buscarModelo3D, clasificarConWikipedia } from './busqueda/wikipedia.js'
 import { cargarImagen } from './busqueda/imagen.js'
 import { cargarModelo3D } from './busqueda/modelo3d.js'
-import { segmentar } from './analisis/segmentar.js'
-import { identificarRegiones } from './analisis/regiones.js'
-import { crearForma } from './generadores/formas.js'
+import { generarEnSegundoPlano } from './trabajo/cliente.js'
+import { armarGeometria } from './trabajo/procesar.js'
 import { descargarGLB } from './exportar/glb.js'
-import { paletaDesdeColor } from './generadores/paleta.js'
-import { leerRasgos, leerVolumen } from './parser/rasgos.js'
-import { crearRandom, semillaDeTexto } from './utils/random.js'
+import { leerElementos, leerEstacion, leerLuz, leerRasgos, leerVolumen } from './parser/rasgos.js'
+import { planearEfectos } from './efectos/planear.js'
+import { semillaDeTexto } from './utils/random.js'
 import './App.css'
 
 const PRUEBA_CON = `Prueba con: ${FORMAS_DISPONIBLES.join(', ')}.`
 
-// Como se construyo el modelo, para mostrarlo debajo del visor.
-const METODOS = {
-  modelo: 'modelo 3D real',
-  torno: 'silueta de la foto, girada',
-  inflado: 'silueta de la foto, inflada',
-  plano: 'silueta de la foto, plana',
-}
-
+// Correccion - Poll: debajo del visor no debe verse ningun texto, solo las acciones
 function App() {
   const [modelo, setModelo] = useState(null)
   const [progreso, setProgreso] = useState(0)
@@ -37,15 +29,17 @@ function App() {
   //   1. Interpretar el texto con el diccionario propio.
   //   2. Si nombra una cosa real o algo desconocido, buscarlo en Wikipedia:
   //      que es, a que figura se parece y si tiene un modelo 3D real.
-  //   3. Buscar una foto real y estudiarla: separar el objeto del fondo e
-  //      identificar sus partes por color. La foto no se pega en el modelo.
-  //   4. Construir la forma.
+  //   3. Buscar una foto real y, si existe, un modelo 3D real.
+  //   4. En un proceso aparte: estudiar la foto (separar el objeto del fondo
+  //      e identificar sus partes) y construir la forma. La foto no se pega
+  //      en el modelo.
   async function generar(texto, intento) {
     const id = ++busqueda.current
     const vigente = () => id === busqueda.current
     const receta = interpretar(texto)
 
     let fuente = null
+    let modelo3d = null
     if (receta.cosas.length) {
       setMensaje(`Buscando "${receta.cosas.join(' ')}" en Wikipedia...`)
       fuente = await clasificarConWikipedia(receta.cosas)
@@ -56,26 +50,26 @@ function App() {
       if (!vigente()) return
       if (direccion) {
         setMensaje('Descargando el modelo 3D real...')
-        receta.modelo = await cargarModelo3D(direccion)
+        modelo3d = await cargarModelo3D(direccion)
         if (!vigente()) return
       }
     }
 
     // Foto real de la cosa, para estudiar su silueta y sus colores.
     let imagen = null
-    let segmento = null
     if (fuente) {
       setMensaje('Buscando una foto real...')
       const foto = await buscarFoto(fuente.articulo)
       imagen = foto && (await cargarImagen(foto))
       if (!vigente()) return
-      if (imagen) {
-        setMensaje('Estudiando la forma y los colores de la foto...')
-        segmento = segmentar(imagen)
-      }
     }
 
-    if (!receta.tipo && !receta.modelo && !segmento) {
+    // Sin forma conocida, sin modelo 3D y sin foto no hay con que construir.
+    // El modelo de la busqueda anterior se desarma, para que no parezca la
+    // respuesta a esta (buscar "marte" dejaba la Tierra en pantalla).
+    // Correccion - Poll: al fallar una busqueda quedaba el modelo anterior con el aviso encima
+    const sinForma = () => {
+      setDesarmando(true)
       if (fuente) {
         const { titulo, descripcion } = fuente.articulo
         setMensaje(
@@ -84,14 +78,10 @@ function App() {
       } else {
         setMensaje(`Todavía no sé construir "${texto}". ${PRUEBA_CON}`)
       }
-      return
     }
-
-    const apariencia = {
-      imagen,
-      segmento,
-      regiones: segmento && identificarRegiones(segmento),
-      paleta: paletaDesdeColor(receta.color),
+    if (!receta.tipo && !modelo3d && !imagen) {
+      sinForma()
+      return
     }
 
     // Rasgos que cambian la forma (nieve, lava, bosque, conifera, altitud),
@@ -102,16 +92,55 @@ function App() {
     // texto, el titulo y la descripcion corta. El articulo menciona demasiadas
     // cosas: "un arbol es una planta perenne con hojas" no hace plano al arbol.
     receta.rasgos.volumen = leerVolumen(texto, titulo, descripcion)
+    // Elementos que se suman al entorno ("montana con lago"): rio, lago, bosque...
+    receta.rasgos.elementos = leerElementos(texto, titulo, descripcion)
+    // Estacion de la vegetacion ("arbol de otono"): cambia hojas, pasto y nieve.
+    receta.rasgos.estacion = leerEstacion(texto, titulo, descripcion)
+    // Si tiene luz propia o brilla (el Sol, una vela, oro). De la descripcion se
+    // miran solo las primeras palabras, que dicen que es la cosa: "tercer planeta
+    // desde el Sol" no hace brillar a la Tierra.
+    receta.rasgos.luz = leerLuz(texto, titulo, descripcion.split(/\s+/).slice(0, 3).join(' '))
 
-    // La erosion tarda un momento: se muestra el aviso antes de empezar.
-    setMensaje('Generando...')
-    await new Promise((listo) => setTimeout(listo, 30))
-    if (!vigente()) return
-
+    // El trabajo pesado (estudiar la foto y armar la malla) corre en un
+    // proceso aparte, asi la pagina sigue respondiendo mientras tanto.
+    setMensaje(imagen ? 'Estudiando la foto y armando el modelo...' : 'Generando...')
     const semilla = semillaDeTexto(texto) + intento
-    const forma = crearForma(receta, apariencia, crearRandom(semilla))
+    let forma
+    try {
+      forma = await generarEnSegundoPlano({
+        receta,
+        imagen,
+        modelo: modelo3d?.attributes.position.array ?? null,
+        semilla,
+      })
+    } catch {
+      if (vigente()) {
+        setDesarmando(true)
+        setMensaje('No se pudo generar el modelo. Intenta de nuevo.')
+      }
+      return
+    }
+    if (!vigente()) return
+    if (forma.sinForma) {
+      sinForma()
+      return
+    }
+
+    const geometria = armarGeometria(forma)
     setModelo({
-      ...forma,
+      geometria,
+      altura: forma.altura,
+      metodo: forma.metodo,
+      foto: forma.foto,
+      // Efectos de luz segun lo que es: llamaradas, chispas, reflejos...
+      efectos: planearEfectos({
+        geometria,
+        altura: forma.altura,
+        tipo: receta.tipo,
+        rasgos: receta.rasgos,
+        semilla,
+        elementos: receta.rasgos.elementos,
+      }),
       id,
       semilla,
       texto,
@@ -157,6 +186,7 @@ function App() {
         <Visor3D
           modelo={modelo}
           desarmar={desarmando}
+          listo={progreso >= 100}
           onProgreso={setProgreso}
           onDesarmado={desarmado}
         />
@@ -166,25 +196,10 @@ function App() {
         {mensaje && <p className="aviso">{mensaje}</p>}
       </section>
 
-      <div id="estado">
-        {modelo ? (
+      {/* Debajo del visor solo van las acciones, sin textos. */}
+      <div id="estado" data-listo={modelo && !desarmando && progreso >= 100 ? modelo.id : ''}>
+        {modelo && (
           <>
-            <div className="detalle">
-              <span>
-                {desarmando
-                  ? 'Desarmando...'
-                  : progreso < 100
-                    ? `Armando: ${progreso} %`
-                    : 'Listo'}
-              </span>
-              {modelo.fuente && (
-                <a className="fuente" href={modelo.fuente.articulo.url} target="_blank">
-                  Wikipedia: {modelo.fuente.articulo.titulo} es &quot;
-                  {modelo.fuente.articulo.descripcion}&quot; →{' '}
-                  {METODOS[modelo.metodo] ?? NOMBRES_FIGURAS[modelo.tipo]}
-                </a>
-              )}
-            </div>
             <div className="acciones">
               <button
                 type="button"
@@ -201,8 +216,6 @@ function App() {
               </button>
             </div>
           </>
-        ) : (
-          <span>Sin modelo</span>
         )}
       </div>
 

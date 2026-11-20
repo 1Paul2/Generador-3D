@@ -24,8 +24,11 @@ const LADOS = 64 // divisiones alrededor del eje en el torno
 const GROSOR = 0.85
 // Medio grosor de una lamina (hoja, bandera), como fraccion de su medida mas grande.
 const LAMINA = 0.006
-const SUAVIZADO = 3 // pasadas para borrar los escalones de los pixeles
-const ANCHO_SURCO = 2 // pixeles a cada lado de la junta entre dos partes
+// Cuanto mas clara (en luz Lab) tiene que ser la franja central que los bordes
+// para considerar redondo un objeto por su sombreado.
+const REDONDEZ_MINIMA = 6
+const SUAVIZADO = 3 // pasadas para borrar los escalones de los pixeles (en 256)
+const ANCHO_SURCO = 2 // pixeles a cada lado de la junta entre dos partes (en 256)
 const PROFUNDIDAD_SURCO = 0.12 // cuanto se hunde la junta, como fraccion de la altura
 
 // Rectangulo que encierra al objeto en la mascara.
@@ -45,6 +48,43 @@ function encuadrar({ mascara, ancho, alto }) {
 // Que tan simetrica es la silueta respecto de su eje vertical (1 = espejo
 // perfecto) y que parte de las filas tiene el objeto cortado en dos o mas
 // tramos (como las piernas de una persona).
+// Forma a partir del sombreado: en un objeto redondo, los costados quedan de
+// perfil a la luz y se ven mas oscuros que el centro; en uno plano la luz es
+// pareja. Para cada fila se compara la luz (L de Lab) del centro de la fila
+// con la de sus bordes, y se promedia pesando por el ancho de la fila.
+// Devuelve cuanto mas claro es el centro que los bordes (0 = parejo).
+function medirRedondez({ mascara, lab, ancho }, caja) {
+  let suma = 0
+  let peso = 0
+  for (let y = caja.y0; y <= caja.y1; y++) {
+    let [izquierda, derecha] = [Infinity, -Infinity]
+    for (let x = caja.x0; x <= caja.x1; x++) {
+      if (mascara[y * ancho + x]) {
+        izquierda = Math.min(izquierda, x)
+        derecha = Math.max(derecha, x)
+      }
+    }
+    const mitad = (derecha - izquierda) / 2
+    if (mitad < 4) continue
+    const centro = (izquierda + derecha) / 2
+    const luz = { adentro: [0, 0], afuera: [0, 0] }
+    for (let x = izquierda; x <= derecha; x++) {
+      const i = y * ancho + x
+      if (!mascara[i]) continue
+      const u = Math.abs(x - centro) / mitad
+      const zona = u < 0.4 ? luz.adentro : u > 0.75 ? luz.afuera : null
+      if (zona) {
+        zona[0] += lab[i][0]
+        zona[1]++
+      }
+    }
+    if (!luz.adentro[1] || !luz.afuera[1]) continue
+    suma += (luz.adentro[0] / luz.adentro[1] - luz.afuera[0] / luz.afuera[1]) * mitad
+    peso += mitad
+  }
+  return peso ? suma / peso : 0
+}
+
 function medirSimetria({ mascara, ancho }, caja) {
   let suma = 0
   let cuenta = 0
@@ -174,7 +214,7 @@ function distanciaAlBorde(dentro, ancho, alto) {
 
 // Promedia cada vertice con sus vecinos unas pasadas, para que el contorno
 // no muestre los escalones de los pixeles.
-function suavizarMalla(posiciones, indices) {
+function suavizarMalla(posiciones, indices, pasadas) {
   const cantidad = posiciones.length / 3
   const vecinos = Array.from({ length: cantidad }, () => new Set())
   for (let t = 0; t < indices.length; t += 3) {
@@ -183,7 +223,7 @@ function suavizarMalla(posiciones, indices) {
     vecinos[b].add(a).add(c)
     vecinos[c].add(a).add(b)
   }
-  for (let pasada = 0; pasada < SUAVIZADO; pasada++) {
+  for (let pasada = 0; pasada < pasadas; pasada++) {
     const copia = posiciones.slice()
     for (let v = 0; v < cantidad; v++) {
       if (!vecinos[v].size) continue
@@ -204,6 +244,7 @@ function suavizarMalla(posiciones, indices) {
 //      alta que lo cubre.
 // Asi cada parte tiene su propio grosor: una pata fina queda fina y el cuerpo
 // grueso queda grueso, en lugar de inflar todo con el mismo radio.
+// Correccion - Poll: partes que se ensanchan quedaban sin altura en su linea central y el objeto se rajaba
 function alturasPorEsferas(dentro, distancias, ancho, alto) {
   const alturas = new Float32Array(dentro.length)
   for (let y = 0; y < alto; y++) {
@@ -233,14 +274,20 @@ function alturasPorEsferas(dentro, distancias, ancho, alto) {
       }
     }
   }
-  // El borde queda en cero para que el frente y la espalda se cierren.
-  for (let i = 0; i < alturas.length; i++) if (distancias[i] <= 1) alturas[i] = 0
+  for (let i = 0; i < alturas.length; i++) {
+    // Cada pixel es, como minimo, el centro de su propia esfera. Sin esto, la
+    // linea central de una parte que se ensancha (una pata hacia el cuerpo) no
+    // cuenta como eje, queda sin altura y el objeto se raja ahi.
+    if (dentro[i]) alturas[i] = Math.max(alturas[i], distancias[i])
+    // El borde queda en cero para que el frente y la espalda se cierren.
+    if (distancias[i] <= 1) alturas[i] = 0
+  }
   return alturas
 }
 
 // Surcos entre partes: donde cambia la region de color (vidrio y carroceria,
 // cuello y cuerpo) la superficie se hunde un poco, como una junta real.
-function marcarSurcos(alturas, dentro, ancho, alto, regionDe) {
+function marcarSurcos(alturas, dentro, ancho, alto, regionDe, anchoSurco) {
   const lejania = new Float32Array(alturas.length).fill(Infinity)
   const cola = []
   for (let y = 0; y < alto; y++) {
@@ -257,10 +304,10 @@ function marcarSurcos(alturas, dentro, ancho, alto, regionDe) {
       }
     }
   }
-  // Distancia a la junta mas cercana, recorriendo de a un pixel hasta ANCHO_SURCO.
+  // Distancia a la junta mas cercana, recorriendo de a un pixel hasta anchoSurco.
   for (let paso = 0; paso < cola.length; paso++) {
     const i = cola[paso]
-    if (lejania[i] >= ANCHO_SURCO) continue
+    if (lejania[i] >= anchoSurco) continue
     for (const v of [i - 1, i + 1, i - ancho, i + ancho]) {
       if (v >= 0 && v < alturas.length && dentro[v] && lejania[v] === Infinity) {
         lejania[v] = lejania[i] + 1
@@ -269,7 +316,7 @@ function marcarSurcos(alturas, dentro, ancho, alto, regionDe) {
     }
   }
   for (let i = 0; i < alturas.length; i++) {
-    if (lejania[i] <= ANCHO_SURCO) alturas[i] *= 1 - PROFUNDIDAD_SURCO * (1 - lejania[i] / (ANCHO_SURCO + 1))
+    if (lejania[i] <= anchoSurco) alturas[i] *= 1 - PROFUNDIDAD_SURCO * (1 - lejania[i] / (anchoSurco + 1))
   }
 }
 
@@ -278,6 +325,7 @@ function marcarSurcos(alturas, dentro, ancho, alto, regionDe) {
 // donde es angosta (la punta de una hoja), el frente y la espalda quedaban
 // tan pegados que se cruzaban y se veia una rejilla.
 // Correccion - Poll: las laminas salian abombadas y con una rejilla en las partes angostas
+// Correccion - Poll: el frente y la espalda se pegaban en cualquier pixel sin altura, no solo en el borde
 function inflar(segmento, caja, escala, colorDe, regionDe, plano) {
   const { ancho, alto } = caja
   const dentro = new Uint8Array(ancho * alto)
@@ -287,13 +335,15 @@ function inflar(segmento, caja, escala, colorDe, regionDe, plano) {
     }
   }
   const distancias = distanciaAlBorde(dentro, ancho, alto)
+  // Los anchos en pixeles se escalan con la resolucion de la grilla.
+  const escalaPixeles = Math.max(1, Math.max(segmento.ancho, segmento.alto) / 256)
   let levantar
   if (plano) {
     const lamina = LAMINA * Math.max(ancho, alto)
     levantar = (i) => (distancias[i] <= 1 ? 0 : lamina)
   } else {
     const alturas = alturasPorEsferas(dentro, distancias, ancho, alto)
-    marcarSurcos(alturas, dentro, ancho, alto, (x, y) => regionDe(x + caja.x0, y + caja.y0))
+    marcarSurcos(alturas, dentro, ancho, alto, (x, y) => regionDe(x + caja.x0, y + caja.y0), Math.round(ANCHO_SURCO * escalaPixeles))
     levantar = (i) => GROSOR * alturas[i]
   }
 
@@ -311,8 +361,9 @@ function inflar(segmento, caja, escala, colorDe, regionDe, plano) {
       frente[i] = posiciones.length / 3
       posiciones.push(px, py, z * escala)
       colores.push(...color)
-      // En el borde el frente y la espalda comparten el vertice, asi se cierran.
-      if (z === 0) {
+      // Solo en el borde real el frente y la espalda comparten el vertice, asi
+      // se cierran; adentro siempre van separados.
+      if (distancias[i] <= 1) {
         atras[i] = frente[i]
       } else {
         atras[i] = posiciones.length / 3
@@ -342,7 +393,7 @@ function inflar(segmento, caja, escala, colorDe, regionDe, plano) {
       else if (ea && eb && ec) triangulo(a, c, b)
     }
   }
-  suavizarMalla(posiciones, indices)
+  suavizarMalla(posiciones, indices, Math.round(SUAVIZADO * escalaPixeles))
   return armarGeometria(posiciones, colores, indices)
 }
 
@@ -389,10 +440,15 @@ export function crearDesdeSilueta(segmento, regiones, receta) {
     return [color.r, color.g, color.b]
   }
 
+  // El volumen se toma del texto; si el texto no dice nada, se lee en la foto:
+  // una silueta simetrica, de un solo tramo por fila y con los bordes mas
+  // oscuros que el centro (sombreado de algo redondo) va al torno.
   const volumen = receta.rasgos?.volumen
   const { parecido, partidas } = medirSimetria(segmento, caja)
+  const redondaPorSombra =
+    !volumen && parecido > 0.85 && partidas < 0.1 && medirRedondez(segmento, caja) > REDONDEZ_MINIMA
   const metodo =
-    volumen === 'giratorio' && parecido > 0.75 && partidas < 0.15
+    (volumen === 'giratorio' && parecido > 0.75 && partidas < 0.15) || redondaPorSombra
       ? 'torno'
       : volumen === 'plano'
         ? 'plano'

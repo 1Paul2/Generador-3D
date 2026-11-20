@@ -2,7 +2,7 @@
 // Las partes transparentes (fondos de dibujos y esquemas) se rellenan con el
 // color promedio de la imagen, asi quedan como un fondo parejo.
 // Devuelve null si la imagen no carga o el sitio no permite leer sus colores.
-export function cargarImagen(url, lado = 512) {
+export function cargarImagen(url, lado = 1280) {
   return new Promise((resolver) => {
     const elemento = new Image()
     elemento.crossOrigin = 'anonymous'
