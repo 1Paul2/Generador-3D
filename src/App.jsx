@@ -73,7 +73,11 @@ function App() {
     }
 
     // Sin forma conocida, sin modelo 3D y sin foto no hay con que construir.
+    // El modelo de la busqueda anterior se desarma, para que no parezca la
+    // respuesta a esta (buscar "marte" dejaba la Tierra en pantalla).
+    // Correccion - Poll: al fallar una busqueda quedaba el modelo anterior con el aviso encima
     const sinForma = () => {
+      setDesarmando(true)
       if (fuente) {
         const { titulo, descripcion } = fuente.articulo
         setMensaje(
@@ -118,7 +122,10 @@ function App() {
         semilla,
       })
     } catch {
-      if (vigente()) setMensaje('No se pudo generar el modelo. Intenta de nuevo.')
+      if (vigente()) {
+        setDesarmando(true)
+        setMensaje('No se pudo generar el modelo. Intenta de nuevo.')
+      }
       return
     }
     if (!vigente()) return
