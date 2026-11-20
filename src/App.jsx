@@ -16,6 +16,7 @@ import './App.css'
 const PRUEBA_CON = `Prueba con: ${FORMAS_DISPONIBLES.join(', ')}.`
 
 // Correccion - Poll: debajo del visor no debe verse ningun texto, solo las acciones
+// Correccion - Poll: los iconos usaban una ruta fija y no cargaban con la pagina publicada en GitHub Pages
 function App() {
   const [modelo, setModelo] = useState(null)
   const [progreso, setProgreso] = useState(0)
@@ -223,7 +224,7 @@ function App() {
 
       <section id="contacto">
         <svg className="icon" role="presentation" aria-hidden="true">
-          <use href="/icons.svg#social-icon"></use>
+          <use href={`${import.meta.env.BASE_URL}icons.svg#social-icon`}></use>
         </svg>
         <h2>Conecta conmigo</h2>
         <p>Código y otros proyectos</p>
@@ -231,7 +232,7 @@ function App() {
           <li>
             <a href="https://github.com/1Paul2" target="_blank">
               <svg className="button-icon" role="presentation" aria-hidden="true">
-                <use href="/icons.svg#github-icon"></use>
+                <use href={`${import.meta.env.BASE_URL}icons.svg#github-icon`}></use>
               </svg>
               GitHub
             </a>
@@ -242,7 +243,7 @@ function App() {
               target="_blank"
             >
               <svg className="button-icon" role="presentation" aria-hidden="true">
-                <use href="/icons.svg#linkedin-icon"></use>
+                <use href={`${import.meta.env.BASE_URL}icons.svg#linkedin-icon`}></use>
               </svg>
               LinkedIn
             </a>

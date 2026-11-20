@@ -134,9 +134,10 @@ export function columna(origen, direccion, largo, curvatura, pasos = 60) {
 // ---------- Suelo ----------
 
 // Monticulo de tierra al pie de la planta: terrones, granos claros y oscuros
-// y alguna piedrita, bajando hasta el piso en el borde.
-export function suelo(malla, radio, alto, ruido) {
-  const tierra = [86, 60, 42]
+// y alguna piedrita, bajando hasta el piso en el borde. Con barro (el
+// manglar) la tierra es oscura, humeda y plana, con charcos.
+export function suelo(malla, radio, alto, ruido, barro = false) {
+  const tierra = barro ? [58, 48, 38] : [86, 60, 42]
   malla.superficie(40, 120, (u, v) => {
     const r = radio * u
     const a = v * Math.PI * 2
@@ -147,6 +148,11 @@ export function suelo(malla, radio, alto, ruido) {
     const y = (alto * (1 - u * u) + (terron - 0.5) * 0.025) * borde
     let c = aclarar(tierra, 0.8 + terron * 0.4 + (grano - 0.5) * 0.35)
     // Tierra mas seca y clara arriba del monticulo.
+    if (barro) {
+      // Charcos: agua oscura que refleja el cielo.
+      const charco = transicion(0.55, 0.6, ruido(x * 3, 11, z * 3, 3))
+      return { p: vector(x, Math.max(0, y * 0.3), z), c: mezclar(c, [70, 86, 96], charco * 0.8) }
+    }
     c = mezclar(c, [140, 115, 88], 0.35 * (1 - u) * transicion(0.45, 0.7, ruido(x * 6, 9, z * 6, 3)))
     if (grano > 0.9) c = mezclar(c, [128, 116, 100], 0.6)
     return { p: vector(x, Math.max(0, y), z), c }

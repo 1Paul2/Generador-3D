@@ -38,11 +38,8 @@ const FORMAS = {
   montaña: 'montana',
   volcán: 'volcan',
   árbol: 'arbol',
-  pino: 'arbol',
   abeto: 'arbol',
-  ciprés: 'arbol',
   cerezo: 'arbol',
-  almendro: 'arbol',
   manzano: 'arbol',
   sauce: 'arbol',
   olivo: 'arbol',
@@ -129,7 +126,12 @@ const FORMAS = {
       'cacaotal', 'palma', 'palmera', 'palmar', 'naranja', 'naranjo', 'naranjal', 'limón', 'limonero', 'mango',
       'aguacate', 'aguacatal', 'papaya', 'papayo', 'chayote', 'chayotera', 'melón', 'sandía', 'coco', 'cocotero',
       'cocal', 'pejibaye', 'pejibayal', 'guanacaste', 'ceiba', 'cortez', 'cortés', 'roble', 'teca', 'melina', 'poró',
-      'cedro', 'guarumo', 'indio',
+      'cedro', 'guarumo', 'indio', 'guaba', 'laurel', 'pochote', 'cenízaro', 'higuerón', 'malinche', 'encino', 'mangle',
+      'ciprés', 'rambután', 'lechuga', 'repollo', 'zanahoria', 'cebolla', 'brachiaria', 'braquiaria', 'kikuyo', 'dracaena',
+      'helecho', 'almendro', 'espavel', 'guapinol', 'carao', 'javillo', 'balsa', 'cocobolo', 'jacaranda', 'jaúl', 'caoba',
+      'acacia', 'amarillón', 'terminalia', 'pino', 'eucalipto', 'chilamate', 'aguacatillo', 'lloró', 'ira', 'botoncillo',
+      'mandarina', 'guanábana', 'guanábano', 'cas', 'guayaba', 'guayabo', 'carambola', 'marañón', 'macadamia', 'achiote',
+      'nance', 'jocote', 'zapote', 'mamón', 'anona', 'coyol', 'chonta', 'yolillo', 'suita', 'palmito', 'palmitera',
     ].map((palabra) => [palabra, 'cultivo']),
   ),
   persona: 'persona',
@@ -250,6 +252,32 @@ function sinTildes(diccionario) {
 const FORMAS_NORMALIZADAS = sinTildes(FORMAS)
 const COLORES_NORMALIZADOS = sinTildes(COLORES)
 
+// Nombres de varias palabras que son una sola cosa ("roble negro" no es el
+// roble sabana pintado de negro). Se juntan en una palabra antes de leer el texto.
+const FRASES = [
+  [/\broble (negro|de altura|de montana)\b/g, 'roblenegro'],
+  [/\bmadero negro\b/g, 'maderonegro'],
+  [/\bmamon chino\b/g, 'mamonchino'],
+  [/\b(helecho arborescente|rabo de mico|rabos de mico)\b/g, 'rabodemico'],
+  [/\b(helecho )?(hoja|hojas) de cuero\b/g, 'helechocuero'],
+  [/\bcanas? india\b/g, 'canaindia'],
+  [/\b(pasto )?estrella africana\b/g, 'estrellaafricana'],
+  [/\bmangle rojo\b/g, 'manglerojo'],
+  [/\bmangle caballero\b/g, 'manglecaballero'],
+  [/\bmangle (salado|negro)\b/g, 'manglesalado'],
+  [/\bmangle (blanco|mariquita)\b/g, 'mangleblanco'],
+  [/\bmangle botoncillo\b/g, 'manglebotoncillo'],
+  [/\bmangle pinuela\b/g, 'manglepinuela'],
+  [/\bcorte[sz] negro\b/g, 'cortezn'],
+  [/\balmendro de playa\b/g, 'almendroplaya'],
+  [/\balmendro de montana\b/g, 'almendro'],
+  [/\broble blanco\b/g, 'robleblanco'],
+  [/\bcedro dulce\b/g, 'cedrodulce'],
+  [/\bmanzanas? de agua\b/g, 'manzanaagua'],
+  [/\bpalma real\b/g, 'palmareal'],
+]
+const PALABRAS_DE_FRASES = new Set(FRASES.map(([, palabra]) => palabra))
+
 // Colores que tambien son el nombre de una cosa.
 const COLORES_QUE_SON_COSAS = new Set(['naranja', 'rosa', 'oro', 'plata', 'bronce', 'cobre'])
 const TAMANOS_NORMALIZADOS = sinTildes(TAMANOS)
@@ -273,8 +301,10 @@ function clave(diccionario, palabra) {
 //   cosas: palabras que nombran algo real (no una forma abstracta como "cubo"),
 //     para buscar su foto: "torre eiffel", "volcán", "lata".
 // Correccion - Poll: "naranja" solo se tomaba como color y no se construia nada
+// Correccion - Poll: los nombres de varias palabras ("roble negro", "mamon chino") se leian por separado
 export function interpretar(texto) {
-  const palabras = texto.toLowerCase().split(/\s+/).filter(Boolean)
+  const juntado = FRASES.reduce((t, [frase, palabra]) => t.replace(frase, palabra), normalizar(texto))
+  const palabras = (juntado === normalizar(texto) ? texto.toLowerCase() : juntado).split(/\s+/).filter(Boolean)
   const receta = {
     tipo: null,
     color: '#c084fc',
@@ -292,15 +322,15 @@ export function interpretar(texto) {
     if (singular.some((p) => PIDEN_RACIMO.has(p))) receta.racimo = true
     if (singular.some((p) => PIDEN_FRUTO.has(p))) receta.fruto = true
     if (singular.some((p) => PIDEN_PLANTA.has(p) || PIDEN_RACIMO.has(p) || PIDEN_FRUTO.has(p)) && !buscar(FORMAS_NORMALIZADAS, palabra)) continue
-    const forma = buscar(FORMAS_NORMALIZADAS, palabra)
-    if (forma === 'cultivo') cultivos.push(clave(FORMAS_NORMALIZADAS, palabra))
+    const forma = PALABRAS_DE_FRASES.has(palabra) ? 'cultivo' : buscar(FORMAS_NORMALIZADAS, palabra)
+    if (forma === 'cultivo') cultivos.push(PALABRAS_DE_FRASES.has(palabra) ? palabra : clave(FORMAS_NORMALIZADAS, palabra))
     const color = buscar(COLORES_NORMALIZADOS, palabra)
     const tamano = buscar(TAMANOS_NORMALIZADOS, palabra)
 
     if (forma && !receta.tipo) {
       receta.tipo = forma
       // Que palabra nombro la forma (sin tildes y en singular), para saber la especie.
-      receta.palabra = clave(FORMAS_NORMALIZADAS, palabra)
+      receta.palabra = PALABRAS_DE_FRASES.has(palabra) ? palabra : clave(FORMAS_NORMALIZADAS, palabra)
     }
     receta.color = color ?? receta.color
     receta.colorElegido ||= Boolean(color)
