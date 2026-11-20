@@ -29,6 +29,10 @@ const FORMAS = {
   rueda: 'disco',
   plato: 'disco',
   huevo: 'huevo',
+  piedra: 'roca',
+  roca: 'roca',
+  peñasco: 'roca',
+  guijarro: 'roca',
   torre: 'torre',
   edificio: 'edificio',
   montaña: 'montana',
@@ -62,6 +66,9 @@ const FORMAS = {
   barranco: 'canon',
   acantilado: 'acantilado',
   playa: 'costa',
+  agua: 'costa',
+  mar: 'costa',
+  océano: 'costa',
   costa: 'costa',
   // Seres vivos: el tipo es el plan corporal; la palabra dice la especie.
   perro: 'cuadrupedo',
@@ -80,6 +87,11 @@ const FORMAS = {
   león: 'cuadrupedo',
   leona: 'cuadrupedo',
   tigre: 'cuadrupedo',
+  leopardo: 'cuadrupedo',
+  jaguar: 'cuadrupedo',
+  guepardo: 'cuadrupedo',
+  pantera: 'cuadrupedo',
+  cebra: 'cuadrupedo',
   lobo: 'cuadrupedo',
   zorro: 'cuadrupedo',
   oso: 'cuadrupedo',
@@ -123,6 +135,7 @@ export const NOMBRES_FIGURAS = {
   cojin: 'cojín',
   disco: 'disco',
   huevo: 'huevo',
+  roca: 'roca',
   torre: 'torre',
   edificio: 'edificio',
   montana: 'montaña',
@@ -206,6 +219,9 @@ function sinTildes(diccionario) {
 
 const FORMAS_NORMALIZADAS = sinTildes(FORMAS)
 const COLORES_NORMALIZADOS = sinTildes(COLORES)
+
+// Colores que tambien son el nombre de una cosa.
+const COLORES_QUE_SON_COSAS = new Set(['naranja', 'rosa', 'oro', 'plata', 'bronce', 'cobre'])
 const TAMANOS_NORMALIZADOS = sinTildes(TAMANOS)
 
 // Busca la palabra tal cual y sin plural ("cubos" -> "cubo", "naranjas" -> "naranja").
@@ -226,6 +242,7 @@ function clave(diccionario, palabra) {
 //     nombra una figura, tipo es null y estas se averiguan en Wikipedia.
 //   cosas: palabras que nombran algo real (no una forma abstracta como "cubo"),
 //     para buscar su foto: "torre eiffel", "volcán", "lata".
+// Correccion - Poll: "naranja" solo se tomaba como color y no se construia nada
 export function interpretar(texto) {
   const palabras = texto.toLowerCase().split(/\s+/).filter(Boolean)
   const receta = {
@@ -256,6 +273,17 @@ export function interpretar(texto) {
     if (desconocida) receta.desconocidas.push(original)
     const geometrica = GEOMETRICAS.has(palabra) || GEOMETRICAS.has(palabra.replace(/s$/, ''))
     if (desconocida || (forma && !geometrica)) receta.cosas.push(original)
+  }
+
+  // "naranja" o "rosa" solos nombran la fruta o la flor, no un color: si
+  // ninguna otra palabra dice que construir, se buscan como cosas.
+  if (!receta.tipo && !receta.cosas.length) {
+    const nombres = palabras.filter((p) => COLORES_QUE_SON_COSAS.has(normalizar(p)))
+    if (nombres.length) {
+      receta.cosas.push(...nombres)
+      receta.desconocidas.push(...nombres)
+      receta.colorElegido = false
+    }
   }
 
   return receta
