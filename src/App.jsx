@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import Buscador from './components/Buscador.jsx'
 import Visor3D from './components/Visor3D.jsx'
-import { interpretar, FORMAS_DISPONIBLES, NOMBRES_FIGURAS } from './parser/interpretar.js'
+import { interpretar, FORMAS_DISPONIBLES } from './parser/interpretar.js'
 import { buscarFoto, buscarModelo3D, clasificarConWikipedia } from './busqueda/wikipedia.js'
 import { cargarImagen } from './busqueda/imagen.js'
 import { cargarModelo3D } from './busqueda/modelo3d.js'
@@ -15,15 +15,7 @@ import './App.css'
 
 const PRUEBA_CON = `Prueba con: ${FORMAS_DISPONIBLES.join(', ')}.`
 
-// Como se construyo el modelo, para mostrarlo debajo del visor.
-const METODOS = {
-  modelo: 'modelo 3D real',
-  torno: 'silueta de la foto, girada',
-  inflado: 'silueta de la foto, inflada',
-  plano: 'silueta de la foto, plana',
-  figuraFoto: 'forma conocida, con los colores de la foto',
-}
-
+// Correccion - Poll: debajo del visor no debe verse ningun texto, solo las acciones
 function App() {
   const [modelo, setModelo] = useState(null)
   const [progreso, setProgreso] = useState(0)
@@ -204,25 +196,10 @@ function App() {
         {mensaje && <p className="aviso">{mensaje}</p>}
       </section>
 
-      <div id="estado">
-        {modelo ? (
+      {/* Debajo del visor solo van las acciones, sin textos. */}
+      <div id="estado" data-listo={modelo && !desarmando && progreso >= 100 ? modelo.id : ''}>
+        {modelo && (
           <>
-            <div className="detalle">
-              <span>
-                {desarmando
-                  ? 'Desarmando...'
-                  : progreso < 100
-                    ? `Armando: ${progreso} %`
-                    : 'Listo'}
-              </span>
-              {modelo.fuente && (
-                <a className="fuente" href={modelo.fuente.articulo.url} target="_blank">
-                  Wikipedia: {modelo.fuente.articulo.titulo} es &quot;
-                  {modelo.fuente.articulo.descripcion}&quot; →{' '}
-                  {METODOS[modelo.metodo] ?? NOMBRES_FIGURAS[modelo.tipo]}
-                </a>
-              )}
-            </div>
             <div className="acciones">
               <button
                 type="button"
@@ -239,8 +216,6 @@ function App() {
               </button>
             </div>
           </>
-        ) : (
-          <span>Sin modelo</span>
         )}
       </div>
 
