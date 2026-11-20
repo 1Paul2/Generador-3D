@@ -2,11 +2,11 @@ import * as THREE from 'three'
 
 // Material que pinta el modelo pixel por pixel de la pantalla con la foto en
 // alta resolucion, en lugar de solo en sus vertices (que se pierde casi todo
-// el detalle). En la tarjeta grafica repite el calculo de colorearAlineado
-// (generadores/formas.js) para cada pixel:
-//   1. Proyeccion desde la camara para lo que mira hacia ella.
-//   2. Sintesis con ruido 3D continuo para costados y espalda, sin uniones.
-//   3. Fundido entre las dos segun cuanto mira hacia la camara.
+// el detalle). En la tarjeta grafica repite, para cada pixel, la lectura
+// envolvente de colorearAlineado (generadores/formas.js): cada punto se ubica
+// por su angulo con la camara y su direccion, y lee la foto desde el centro
+// del objeto hacia su borde (adelante) y de vuelta (atras), sin estirar el
+// perfil ni dejar uniones.
 // Ademas suma relieve fino (bump mapping): la variacion de brillo de la foto
 // inclina la superficie en cada pixel, asi aparecen el granulado, la corteza
 // o la trama de una tela sin agregar vertices.
@@ -16,50 +16,30 @@ import * as THREE from 'three'
 // Fuerza del relieve fino (en unidades de la escena por unidad de brillo).
 const RELIEVE = 0.05
 
-const ruidoGlsl = /* glsl */ `
-  float azar3(vec3 p) {
-    p = fract(p * 0.3183099 + 0.1);
-    p *= 17.0;
-    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-  }
-  // Ruido de valor: numeros al azar en una grilla, mezclados suavemente.
-  float ruidoValor(vec3 x) {
-    vec3 i = floor(x);
-    vec3 f = fract(x);
-    f = f * f * (3.0 - 2.0 * f);
-    return mix(
-      mix(mix(azar3(i), azar3(i + vec3(1, 0, 0)), f.x), mix(azar3(i + vec3(0, 1, 0)), azar3(i + vec3(1, 1, 0)), f.x), f.y),
-      mix(mix(azar3(i + vec3(0, 0, 1)), azar3(i + vec3(1, 0, 1)), f.x), mix(azar3(i + vec3(0, 1, 1)), azar3(i + vec3(1, 1, 1)), f.x), f.y),
-      f.z);
-  }
-  // Varias escalas del mismo ruido: manchas grandes con detalle fino.
-  float ruidoFbm(vec3 p) {
-    float suma = 0.0, amplitud = 0.5, total = 0.0;
-    for (int capa = 0; capa < 4; capa++) {
-      suma += amplitud * ruidoValor(p);
-      total += amplitud;
-      amplitud *= 0.5;
-      p *= 2.0;
-    }
-    return suma / total;
-  }
-`
-
 const colorGlsl = /* glsl */ `
   vec3 colorFoto;
   {
-    vec3 p = vPosObjeto - uCentro;
-    float u = (dot(p, uDerecha) - uLimites.x) / max(1e-6, uLimites.y - uLimites.x);
-    float w = (dot(p, uArriba) - uLimites.z) / max(1e-6, uLimites.w - uLimites.z);
-    vec3 proyectado = texture2D(uFoto, vec2(mix(uCaja.x, uCaja.z, u), mix(uCaja.w, uCaja.y, w))).rgb;
+    vec3 q = vPosObjeto - uCentro;
+    float x = dot(q, uDerecha);
+    float y = dot(q, uArriba);
+    float z = dot(q, uDireccion);
+    float theta = atan(length(vec2(x, y)), z);
+    float phi = atan(y, x);
+    // Adelante se va del centro al borde; atras se vuelve del borde al centro.
+    float avance = sin((theta <= 1.5707963 ? theta : 3.1415927 - theta) * 0.5) / 0.70710678;
+    float a = (phi < 0.0 ? phi + 6.2831853 : phi) / 6.2831853 * float(RADIOS);
+    int i0 = int(floor(a)) % RADIOS;
+    int i1 = (i0 + 1) % RADIOS;
+    float radio = mix(uRadios[i0], uRadios[i1], fract(a)) * uAlcance * avance;
+    vec2 pixel = uCentroFoto + vec2(cos(phi), -sin(phi)) * radio;
+    colorFoto = texture2D(uFoto, pixel / uTamano).rgb;
 
-    // Cuanto mira el punto hacia la camara (1 = de frente).
-    float mira = smoothstep(0.15, 0.6, dot(normalize(vNormalObjeto), uDireccion));
-    vec3 q = vPosObjeto * uEscala;
-    float su = clamp((ruidoFbm(q + vec3(uDesfases.x, 0.0, 0.0)) - 0.5) * 2.6 + 0.5, 0.0, 1.0);
-    float sv = clamp((ruidoFbm(q + vec3(0.0, uDesfases.y, 0.0)) - 0.5) * 2.6 + 0.5, 0.0, 1.0);
-    vec3 sintetico = texture2D(uFoto, vec2(mix(uCaja.x, uCaja.z, su), mix(uCaja.y, uCaja.w, sv))).rgb;
-    colorFoto = mix(sintetico, proyectado, mira);
+    // Se compensa la luz con la que se saco la foto (el borde mas oscuro). El
+    // perfil se midio en la escala de la foto; aca los colores son lineales.
+    float anillo = clamp(uAlcance * avance * float(ANILLOS) - 0.5, 0.0, float(ANILLOS - 1));
+    int j0 = int(floor(anillo));
+    int j1 = min(j0 + 1, ANILLOS - 1);
+    colorFoto *= pow(mix(uPerfil[j0], uPerfil[j1], fract(anillo)), 2.2);
   }
   diffuseColor.rgb *= colorFoto;
 `
@@ -79,7 +59,7 @@ const relieveGlsl = /* glsl */ `
   }
 `
 
-// foto: lo que devuelve procesar() (textura del objeto y datos de la proyeccion).
+// foto: lo que devuelve procesar() (textura del objeto y datos de la lectura).
 // basico: true para cosas con luz propia (no dependen de la iluminacion ni llevan relieve).
 // Devuelve { material, textura } (las dos hay que liberarlas al terminar).
 export function crearMaterialFoto(foto, { basico = false, rugosidad = 1, metal = 0 } = {}) {
@@ -101,30 +81,32 @@ export function crearMaterialFoto(foto, { basico = false, rugosidad = 1, metal =
     uDerecha: { value: new THREE.Vector3(...foto.derecha) },
     uArriba: { value: new THREE.Vector3(...foto.arriba) },
     uDireccion: { value: new THREE.Vector3(...foto.direccion) },
-    uLimites: { value: new THREE.Vector4(...foto.limites) },
-    uCaja: { value: new THREE.Vector4(...foto.caja) },
-    uEscala: { value: foto.escala },
-    uDesfases: { value: new THREE.Vector2(...foto.desfases) },
+    uCentroFoto: { value: new THREE.Vector2(...foto.centroFoto) },
+    uTamano: { value: new THREE.Vector2(...foto.tamano) },
+    uRadios: { value: foto.radios },
+    uPerfil: { value: foto.perfil },
+    uAlcance: { value: foto.alcance },
     uRelieve: { value: RELIEVE },
   }
 
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms)
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vPosObjeto;\nvarying vec3 vNormalObjeto;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPosObjeto = position;\nvNormalObjeto = normal;')
+      .replace('#include <common>', '#include <common>\nvarying vec3 vPosObjeto;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPosObjeto = position;')
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
         `#include <common>
+        #define RADIOS ${foto.radios.length}
+        #define ANILLOS ${foto.perfil.length}
         varying vec3 vPosObjeto;
-        varying vec3 vNormalObjeto;
         uniform sampler2D uFoto;
         uniform vec3 uCentro, uDerecha, uArriba, uDireccion;
-        uniform vec4 uLimites, uCaja;
-        uniform float uEscala, uRelieve;
-        uniform vec2 uDesfases;
-        ${ruidoGlsl}`,
+        uniform vec2 uCentroFoto, uTamano;
+        uniform float uRadios[RADIOS];
+        uniform float uPerfil[ANILLOS];
+        uniform float uAlcance, uRelieve;`,
       )
       .replace('#include <color_fragment>', `#include <color_fragment>\n${colorGlsl}`)
     if (!basico) {
