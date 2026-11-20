@@ -34,9 +34,10 @@ export function procesar({ receta, imagen, modelo, semilla }) {
   const { geometria, altura, metodo, foto } = crearForma(receta, apariencia, crearRandom(semilla))
 
   // Solo lo que hace falta para dibujar: posicion, luz y color de cada vertice,
-  // y si hay, los datos para pintarlo pixel por pixel con la foto.
+  // el largo del pelo (animales) y si hay, los datos para pintarlo pixel por
+  // pixel con la foto.
   const atributos = {}
-  for (const nombre of ['position', 'normal', 'color']) {
+  for (const nombre of ['position', 'normal', 'color', 'pelo']) {
     const atributo = geometria.attributes[nombre]
     if (atributo) atributos[nombre] = Float32Array.from(atributo.array)
   }
@@ -48,7 +49,7 @@ export function procesar({ receta, imagen, modelo, semilla }) {
 export function armarGeometria({ atributos, indices }) {
   const geometria = new THREE.BufferGeometry()
   for (const [nombre, valores] of Object.entries(atributos)) {
-    geometria.setAttribute(nombre, new THREE.BufferAttribute(valores, 3))
+    geometria.setAttribute(nombre, new THREE.BufferAttribute(valores, nombre === 'pelo' ? 1 : 3))
   }
   if (indices) geometria.setIndex(new THREE.BufferAttribute(indices, 1))
   geometria.computeBoundingBox()

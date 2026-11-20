@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { MeshSurfaceSampler } from 'three/addons/math/MeshSurfaceSampler.js'
 import { crearMaterialFoto } from '../efectos/materialFoto.js'
+import Pelaje from './Pelaje.jsx'
 import { crearRandom } from '../utils/random.js'
 
 const CANTIDAD = 1500
@@ -265,6 +266,10 @@ export default function Destellos({ modelo, desarmar, onProgreso, onDesarmado })
             />
           )}
         </mesh>
+      )}
+      {/* Los animales llevan pelo dibujado en capas sobre la piel. */}
+      {modelo?.geometria.attributes.pelo && (
+        <Pelaje key={`pelo-${modelo.id}`} geometria={modelo.geometria} superficie={superficie} />
       )}
     </>
   )
