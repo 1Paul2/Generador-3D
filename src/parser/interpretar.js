@@ -44,7 +44,6 @@ const FORMAS = {
   cerezo: 'arbol',
   almendro: 'arbol',
   manzano: 'arbol',
-  roble: 'arbol',
   sauce: 'arbol',
   olivo: 'arbol',
   arce: 'arbol',
@@ -127,7 +126,10 @@ const FORMAS = {
       'piña', 'ananá', 'piñal', 'café', 'cafeto', 'cafetal', 'caña', 'cañal', 'cañaveral', 'maíz',
       'mazorca', 'elote', 'choclo', 'milpa', 'maizal', 'frijol', 'frijolar', 'poroto', 'tomate',
       'tomatera', 'arroz', 'arrozal', 'papa', 'patata', 'chile', 'pimiento', 'pimentón', 'cacao',
-      'cacaotal', 'palma', 'palmera', 'palmar',
+      'cacaotal', 'palma', 'palmera', 'palmar', 'naranja', 'naranjo', 'naranjal', 'limón', 'limonero', 'mango',
+      'aguacate', 'aguacatal', 'papaya', 'papayo', 'chayote', 'chayotera', 'melón', 'sandía', 'coco', 'cocotero',
+      'cocal', 'pejibaye', 'pejibayal', 'guanacaste', 'ceiba', 'cortez', 'cortés', 'roble', 'teca', 'melina', 'poró',
+      'cedro', 'guarumo', 'indio',
     ].map((palabra) => [palabra, 'cultivo']),
   ),
   persona: 'persona',
@@ -221,9 +223,9 @@ const TAMANOS = {
 const RELLENO = new Set(['un', 'una', 'unos', 'unas', 'el', 'la', 'los', 'las', 'de', 'del', 'con', 'y', 'en'])
 
 // Palabras con las que un agricultor pide la planta y no la cosecha ('mata de
-// banano', 'planta de tomate', 'arbol de cacao'), o la cosecha ('racimo de banano',
-// 'granos de cafe'). Tampoco se buscan en Wikipedia.
-const PIDEN_PLANTA = new Set(['mata', 'planta', 'arbol', 'arbusto', 'cultivo', 'plantacion', 'plantio', 'sembrado', 'siembra', 'sembradio'])
+// banano', 'planta de tomate', 'arbol de cacao', 'palo de mango'), o la cosecha ('racimo de
+// banano', 'granos de cafe'). Tampoco se buscan en Wikipedia.
+const PIDEN_PLANTA = new Set(['mata', 'palo', 'planta', 'arbol', 'arbusto', 'cultivo', 'plantacion', 'plantio', 'sembrado', 'siembra', 'sembradio'])
 const PIDEN_RACIMO = new Set(['racimo', 'mano'])
 const PIDEN_FRUTO = new Set(['fruto', 'fruta', 'grano', 'cosecha'])
 
@@ -282,7 +284,7 @@ export function interpretar(texto) {
     cosas: [],
   }
 
-  let cultivo = null
+  const cultivos = []
   for (const original of palabras) {
     const palabra = normalizar(original)
     const singular = [palabra, palabra.replace(/s$/, ''), palabra.replace(/es$/, '')]
@@ -291,7 +293,7 @@ export function interpretar(texto) {
     if (singular.some((p) => PIDEN_FRUTO.has(p))) receta.fruto = true
     if (singular.some((p) => PIDEN_PLANTA.has(p) || PIDEN_RACIMO.has(p) || PIDEN_FRUTO.has(p)) && !buscar(FORMAS_NORMALIZADAS, palabra)) continue
     const forma = buscar(FORMAS_NORMALIZADAS, palabra)
-    if (forma === 'cultivo') cultivo ??= clave(FORMAS_NORMALIZADAS, palabra)
+    if (forma === 'cultivo') cultivos.push(clave(FORMAS_NORMALIZADAS, palabra))
     const color = buscar(COLORES_NORMALIZADOS, palabra)
     const tamano = buscar(TAMANOS_NORMALIZADOS, palabra)
 
@@ -311,10 +313,15 @@ export function interpretar(texto) {
   }
 
   // El cultivo manda sobre la figura: "arbol de cacao" es el cacao (y su
-  // planta), no un arbol cualquiera.
-  if (cultivo) {
+  // planta), no un arbol cualquiera. "Palma" o "palmera" con otra planta
+  // ("palma de coco") nombran la planta de la otra, no la palma aceitera.
+  // Correccion - Poll: "palma de coco" armaba la palma aceitera
+  if (cultivos.length) {
+    const otras = cultivos.filter((c) => !['palma', 'palmera'].includes(c))
+    const generica = otras.length > 0 && otras.length < cultivos.length
     receta.tipo = 'cultivo'
-    receta.palabra = cultivo
+    receta.palabra = generica ? otras[0] : cultivos[0]
+    if (generica) receta.planta = true
   }
 
   // "naranja" o "rosa" solos nombran la fruta o la flor, no un color: si

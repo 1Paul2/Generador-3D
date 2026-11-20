@@ -1,6 +1,7 @@
 import { ARRIBA, aclarar, columna, cuerpo, girar, hoja, mezclar, transicion, vector } from './botanica.js'
 import { frutaDePina, granoDeArroz, mazorca, racimoDePalma, trozoDeCana } from './plantas.js'
 import { cerezaDeCafe, frutoDeChile, frutoDeTomate, mazorcaDeCacao, tuberculoDePapa, vainaDeFrijol } from './huerta.js'
+import { frutoDeAguacate, frutoDeChayote, frutoDeCoco, frutoDeMango, frutoDeMelon, frutoDeNaranja, frutoDePapaya, racimoDePejibaye } from './frutales.js'
 
 // Lo que se cosecha de cada cultivo, solo (sin la planta): un banano o una
 // mano de bananos, la pina, las raices de yuca, una rama con granos de cafe,
@@ -220,4 +221,48 @@ function maiz(malla, random, ruido) {
   mazorca(malla, random, ruido)
 }
 
-export const COSECHAS = { banano, yuca, pina, cafe, cana, maiz, frijol, tomate, arroz, papa, chile, cacao, palma }
+// Naranjas (o limones): tres frutas, una con la hoja todavia pegada.
+function naranja(malla, random, ruido, opciones) {
+  const limon = opciones.palabra === 'limon'
+  const radio = limon ? 0.028 : 0.04
+  for (let n = 0; n < 3; n++) frutoDeNaranja(malla, vector((n - 1) * radio * 2.1, radio, (n % 2) * radio), radio, random, ruido, limon)
+}
+
+function mango(malla, random, ruido) {
+  for (let n = 0; n < 2; n++) frutoDeMango(malla, vector((n - 0.5) * 0.1, 0.11, 0), 0.12, random, ruido)
+}
+
+function aguacate(malla, random, ruido) {
+  for (let n = 0; n < 2; n++) frutoDeAguacate(malla, vector((n - 0.5) * 0.1, 0.12, 0), 0.075, random, ruido)
+}
+
+function papaya(malla, random, ruido) {
+  frutoDePapaya(malla, vector(-0.13, 0.065, 0), vector(1, 0, 0), 0.28, 0.6, ruido)
+}
+
+function chayote(malla, random, ruido) {
+  for (let n = 0; n < 3; n++) frutoDeChayote(malla, vector((n - 1) * 0.11, 0.14, (n % 2) * 0.05), 0.14, random, ruido)
+}
+
+function melon(malla, random, ruido) {
+  frutoDeMelon(malla, vector(0, 0.085, 0), 0.09, false, random, ruido)
+}
+
+function sandia(malla, random, ruido) {
+  frutoDeMelon(malla, vector(0, 0.15, 0), 0.17, true, random, ruido)
+}
+
+function coco(malla, random, ruido) {
+  frutoDeCoco(malla, vector(-0.13, 0.12, 0), vector(1, 0.1, 0).normalize(), 0.12, false, ruido)
+  frutoDeCoco(malla, vector(0.14, 0.12, 0.05), vector(0.8, 0.2, 0.3).normalize(), 0.11, true, ruido)
+}
+
+function pejibaye(malla, random, ruido) {
+  racimoDePejibaye(malla, vector(0, 0.5, 0), random, ruido)
+}
+
+export const COSECHAS = {
+  banano, yuca, pina, cafe, cana, maiz, frijol, tomate, arroz, papa, chile, cacao, palma,
+  naranja, mango, aguacate, papaya, chayote, melon, sandia, coco, pejibaye,
+}
+

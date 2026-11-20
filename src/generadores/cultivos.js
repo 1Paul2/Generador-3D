@@ -4,6 +4,8 @@ import { crearMalla } from './botanica.js'
 import { aplicarOclusion, calcularOclusion } from './oclusion.js'
 import { arroz, banano, cana, maiz, palma, pina, yuca } from './plantas.js'
 import { cacao, cafe, chile, frijol, papa, tomate } from './huerta.js'
+import { arbol } from './arboles.js'
+import { chayote, melon, palmera, papaya } from './frutales.js'
 import { COSECHAS } from './cosechas.js'
 
 // Cultivos: la planta entera (la mata de banano, el cafeto, la milpa) o lo que
@@ -58,19 +60,66 @@ export const PALABRAS_DE_CULTIVO = {
   palma: 'palma',
   palmera: 'palma',
   palmar: 'palma',
+  // Frutales.
+  naranja: 'naranja',
+  naranjo: 'naranja',
+  naranjal: 'naranja',
+  limon: 'naranja',
+  limonero: 'naranja',
+  mango: 'mango',
+  aguacate: 'aguacate',
+  aguacatal: 'aguacate',
+  papaya: 'papaya',
+  papayo: 'papaya',
+  chayote: 'chayote',
+  chayotera: 'chayote',
+  melon: 'melon',
+  sandia: 'sandia',
+  coco: 'coco',
+  cocotero: 'coco',
+  cocal: 'coco',
+  pejibaye: 'pejibaye',
+  pejibayal: 'pejibaye',
+  // Arboles del bosque y de plantacion forestal.
+  guanacaste: 'guanacaste',
+  ceiba: 'ceiba',
+  cortez: 'cortez',
+  cortes: 'cortez',
+  roble: 'roble',
+  teca: 'teca',
+  melina: 'melina',
+  poro: 'poro',
+  cedro: 'cedro',
+  guarumo: 'guarumo',
+  indio: 'indio',
 }
+
+// Arboles: siempre se arma el arbol (no tienen una cosecha que se pida sola).
+const ARBOLES_DEL_BOSQUE = ['guanacaste', 'ceiba', 'cortez', 'cortes', 'roble', 'teca', 'melina', 'poro', 'cedro', 'guarumo', 'indio']
 
 // Palabras que ya nombran la planta (o el sembrado) y no la cosecha: "cafetal",
 // "milpa". "palma" tambien: la palma es el arbol; su fruto es el "racimo de palma".
 const NOMBRAN_LA_PLANTA = new Set([
   'bananal', 'platanal', 'pinal', 'cafeto', 'cafetal', 'canal', 'canaveral', 'milpa', 'maizal',
-  'frijolar', 'tomatera', 'arrozal', 'cacaotal', 'palma', 'palmera', 'palmar',
+  'frijolar', 'tomatera', 'arrozal', 'cacaotal', 'palma', 'palmera', 'palmar', 'naranjo', 'naranjal',
+  'limonero', 'aguacatal', 'papayo', 'chayotera', 'cocotero', 'cocal', 'pejibayal', ...ARBOLES_DEL_BOSQUE,
 ])
 
 // Y las que nombran la cosecha aunque se diga "planta": "mazorca", "elote".
 const NOMBRAN_LA_COSECHA = new Set(['mazorca', 'elote', 'choclo'])
 
-const PLANTAS = { yuca, banano, pina, cafe, cana, maiz, frijol, tomate, arroz, papa, chile, cacao, palma }
+const PLANTAS = {
+  yuca, banano, pina, cafe, cana, maiz, frijol, tomate, arroz, papa, chile, cacao, palma, papaya, chayote,
+  melon: (malla, random, ruido) => melon(malla, random, ruido, false),
+  sandia: (malla, random, ruido) => melon(malla, random, ruido, true),
+  coco: (malla, random, ruido) => palmera(malla, random, ruido, false),
+  pejibaye: (malla, random, ruido) => palmera(malla, random, ruido, true),
+  ...Object.fromEntries(
+    ['naranja', 'mango', 'aguacate', 'guanacaste', 'ceiba', 'cortez', 'roble', 'teca', 'melina', 'poro', 'cedro', 'guarumo', 'indio'].map(
+      (especie) => [especie, (malla, random, ruido) => arbol(malla, random, ruido, especie)],
+    ),
+  ),
+}
 
 // Decide si se arma la planta o la cosecha, como lo entenderia un agricultor:
 // "mata de banano" o "bananal" es la planta; "banano" solo es la fruta;
