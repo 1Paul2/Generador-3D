@@ -325,61 +325,112 @@ export function melon(malla, random, ruido, sandia = false) {
   }
 }
 
-// ---------- Palmas de coco y de pejibaye ----------
+// ---------- Palmas ----------
 
-// Palma de coco: el tronco delgado, curvo y anillado, la corona de hojas
-// pinnadas con los foliolos colgando y el racimo de cocos. Pejibaye: varios
-// tallos delgados con anillos de espinas negras y racimos de frutos rojos y
-// naranja que cuelgan bajo la corona.
-export function palmera(malla, random, ruido, pejibaye = false) {
-  suelo(malla, 1.2, 0.08, ruido)
-  const tallos = pejibaye ? 3 : 1
-  for (let t = 0; t < tallos; t++) {
+// Fichas de las palmas, en metros:
+//   tallos, alto e inclinacion del tronco; radio; anillos por metro; espinas
+//   (anillos de espinas negras); bases (las bases de las hojas viejas pegadas
+//   al tronco); zancos (cono de raices: chonta); colorTronco; corona (el
+//   tramo verde liso bajo las hojas: palmito).
+//   hojas, largo de cada una, subida (grados) y caida; foliolos por lado, su
+//   largo, su ancho y planos (alternan arriba y abajo: hojas "plumosas");
+//   entera: hojas enteras partidas en dos en la punta (suita).
+//   fruto: 'coco', 'pejibaye' o un racimo de frutos redondos (color y radio).
+const PALMAS = {
+  coco: { tallos: 1, alto: 8, inclinacion: 0.25, radio: 0.16, anillos: 9, colorTronco: [150, 140, 122], hojas: 18, largo: 4, subida: 60, caida: 0.9, foliolos: 55, largoFoliolo: 0.8, anchoFoliolo: 0.028, colgantes: true, fruto: 'coco' },
+  pejibaye: { tallos: 3, alto: 6, inclinacion: 0.17, radio: 0.08, anillos: 12, espinas: 0.05, colorTronco: [110, 100, 80], hojas: 10, largo: 2.5, subida: 60, caida: 0.9, foliolos: 40, largoFoliolo: 0.55, anchoFoliolo: 0.03, planos: true, fruto: 'pejibaye' },
+  palmareal: { tallos: 1, alto: 9, inclinacion: 0.05, radio: 0.28, anillos: 0, bases: true, colorTronco: [120, 108, 88], hojas: 16, largo: 6, subida: 70, caida: 0.6, foliolos: 80, largoFoliolo: 0.9, anchoFoliolo: 0.035, colgantes: true, fruto: { color: [160, 120, 60], radio: 0.03, cantidad: 40 } },
+  coyol: { tallos: 1, alto: 7, inclinacion: 0.05, radio: 0.18, anillos: 8, espinas: 0.06, colorTronco: [92, 82, 70], hojas: 18, largo: 3.5, subida: 55, caida: 1, foliolos: 70, largoFoliolo: 0.7, anchoFoliolo: 0.022, planos: true, fruto: { color: [150, 160, 70], radio: 0.02, cantidad: 50 } },
+  chonta: { tallos: 1, alto: 14, inclinacion: 0.02, radio: 0.13, anillos: 6, zancos: 14, colorTronco: [130, 128, 118], hojas: 7, largo: 4, subida: 65, caida: 0.8, foliolos: 28, largoFoliolo: 0.85, anchoFoliolo: 0.12, planos: true, fruto: { color: [210, 180, 60], radio: 0.015, cantidad: 40 } },
+  yolillo: { tallos: 1, alto: 0.6, inclinacion: 0, radio: 0.45, anillos: 0, bases: true, colorTronco: [100, 86, 64], hojas: 11, largo: 8, subida: 72, caida: 0.8, foliolos: 90, largoFoliolo: 1, anchoFoliolo: 0.035, colgantes: true, fruto: { color: [120, 80, 50], radio: 0.03, cantidad: 30 } },
+  suita: { tallos: 1, alto: 0.4, inclinacion: 0.05, radio: 0.04, anillos: 20, colorTronco: [90, 80, 60], hojas: 12, largo: 1.2, subida: 50, caida: 1, entera: true, fruto: null },
+  palmito: { tallos: 1, alto: 12, inclinacion: 0.03, radio: 0.09, anillos: 10, corona: 1.2, colorTronco: [140, 140, 130], hojas: 10, largo: 3, subida: 55, caida: 1.2, foliolos: 70, largoFoliolo: 0.6, anchoFoliolo: 0.02, colgantes: true, fruto: { color: [60, 40, 70], radio: 0.008, cantidad: 60 } },
+}
+
+// Palmera desde su ficha: el tronco con sus anillos (o espinas, o las bases de
+// las hojas viejas), la corona de hojas pinnadas y los frutos bajo la corona.
+// Correccion - Poll: solo habia coco y pejibaye; las palmas de Costa Rica se arman por su ficha
+export function palmera(malla, random, ruido, nombre) {
+  const ficha = PALMAS[nombre]
+  suelo(malla, Math.max(1.2, ficha.radio * 6), 0.08, ruido)
+  for (let t = 0; t < ficha.tallos; t++) {
     const az = t * 2.1 + random()
-    const alto = pejibaye ? 5 + random() * 2 : 8
-    const inclinacion = pejibaye ? 0.12 + random() * 0.1 : 0.25
+    const alto = ficha.alto * (ficha.tallos > 1 ? 0.8 + random() * 0.35 : 1)
     const fuera = vector(Math.cos(az), 0, Math.sin(az))
-    const radio = pejibaye ? 0.08 : 0.16
+    const radio = ficha.radio
+    const separado = ficha.tallos > 1 ? 0.15 : 0
+    const base = ficha.zancos ? 1.2 : 0
     const tronco = (u) =>
-      vector(0, -0.05 + u * alto, 0).addScaledVector(fuera, Math.sin(u * Math.PI * 0.5) * inclinacion * alto + (pejibaye ? 0.15 : 0))
+      vector(0, -0.05 + base + u * (alto - base), 0).addScaledVector(fuera, Math.sin(u * Math.PI * 0.5) * ficha.inclinacion * alto + separado)
+    const anillo = (u) => (ficha.anillos ? Math.pow(Math.abs(Math.sin(u * alto * ficha.anillos)), 20) : 0)
     malla.tubo(
-      Math.round(alto * 30),
-      pejibaye ? 24 : 20,
+      Math.max(20, Math.round(alto * 30)),
+      24,
       tronco,
       (u, a) => {
-        const anillo = Math.pow(Math.abs(Math.sin(u * alto * (pejibaye ? 12 : 9))), 20)
-        // Las espinas del pejibaye: puntas en anillos alrededor del tronco.
-        const espina = pejibaye ? Math.pow(anillo, 0.2) * Math.pow(Math.max(0, Math.cos(a * 11 + u * 30)), 20) * 0.05 : 0
-        return radio * (1 + 0.5 * Math.exp(-u * 20)) * (1 - 0.15 * u) * (1 - 0.04 * anillo) + espina
+        const espina = ficha.espinas ? Math.pow(anillo(u), 0.2) * Math.pow(Math.max(0, Math.cos(a * 11 + u * 30)), 20) * ficha.espinas : 0
+        // Bases de las hojas viejas: muñones en espiral que hacen el tronco aspero.
+        const bases = ficha.bases ? 0.25 * radio * Math.pow(Math.max(0, Math.sin(a * 5 + u * alto * 9)), 6) : 0
+        return radio * (1 + 0.5 * Math.exp(-u * 20)) * (1 - 0.15 * u) * (1 - 0.04 * anillo(u)) + espina + bases
       },
       (u, a, p) => {
-        const anillo = Math.pow(Math.abs(Math.sin(u * alto * (pejibaye ? 12 : 9))), 20)
-        let c = aclarar(pejibaye ? [110, 100, 80] : [150, 140, 122], 0.8 + ruido(p.x * 40, p.y * 6, p.z * 40, 3) * 0.35)
-        return aclarar(c, 1 - (pejibaye ? 0.7 : 0.35) * anillo)
+        let c = aclarar(ficha.colorTronco, 0.8 + ruido(p.x * 40, p.y * 6, p.z * 40, 3) * 0.35)
+        c = aclarar(c, 1 - (ficha.espinas ? 0.7 : 0.35) * anillo(u))
+        // La corona del palmito: el tramo verde liso donde nacen las hojas.
+        return ficha.corona ? mezclar(c, [90, 130, 70], transicion(1 - ficha.corona / alto - 0.02, 1 - ficha.corona / alto, u)) : c
       },
     )
+    // Cono de raices en zancos de la chonta.
+    for (let z = 0; z < (ficha.zancos ?? 0); z++) {
+      const ang = (z / ficha.zancos) * Math.PI * 2 + random() * 0.3
+      const desde = tronco(0).addScaledVector(ARRIBA, 0.05)
+      const hasta = vector(Math.cos(ang) * 0.6, -0.05, Math.sin(ang) * 0.6)
+      malla.tubo(12, 6, (u) => desde.clone().lerp(hasta, u), () => 0.035, (u, a, p) => aclarar([100, 90, 70], 0.8 + ruido(p.x * 60, p.y * 60, p.z * 60, 2) * 0.3))
+    }
+
     const tope = tronco(1)
-    const hojas = pejibaye ? 10 : 18
-    for (let h = 0; h < hojas; h++) {
-      const edad = 1 - h / (hojas - 1)
+    for (let h = 0; h < ficha.hojas; h++) {
+      const edad = 1 - h / Math.max(1, ficha.hojas - 1)
       const azH = h * 2.39996 + t
-      const largo = pejibaye ? 2.5 : 4
-      const raquis = columna(tope, haciaAfuera(azH, 60 - edad * 50), largo, 0.9 + edad * 0.8, 40)
-      malla.tubo(40, 6, (u) => raquis(u).p, (u) => 0.035 * (1 - u * 0.85), () => [140, 140, 90])
-      const foliolos = pejibaye ? 40 : 55
-      for (let f = 0; f < foliolos; f++) {
-        const s = 0.08 + (f / foliolos) * 0.9
+      const raquis = columna(tope, haciaAfuera(azH, ficha.subida - edad * 50), ficha.largo, ficha.caida + edad * 0.8, 40)
+      malla.tubo(40, 6, (u) => raquis(u).p, (u) => ficha.largo * 0.009 * (1 - u * 0.85), () => [140, 140, 90])
+      const colorHoja = (u) => mezclar(mezclar([62, 112, 44], [110, 140, 60], edad * 0.4), [170, 150, 90], transicion(0.88, 1, u) * edad)
+      if (ficha.entera) {
+        // Hoja entera de la suita, partida en dos en la punta.
+        for (const lado of [-1, 1]) {
+          const { p, tangente } = raquis(0.25)
+          hoja(malla, {
+            base: p,
+            direccion: girar(tangente, ARRIBA, lado * 0.25),
+            largo: ficha.largo * 0.75,
+            ancho: ficha.largo * 0.16,
+            contorno: (u) => Math.pow(Math.sin(Math.PI * Math.pow(u, 1.6)), 0.7),
+            curvatura: 1,
+            pliegue: 0.3,
+            nervios: 14,
+            angulo: 1.2,
+            color: () => colorHoja(0),
+            ruido,
+            nu: 14,
+            nv: 6,
+          })
+        }
+        continue
+      }
+      for (let f = 0; f < ficha.foliolos; f++) {
+        const s = 0.08 + (f / ficha.foliolos) * 0.9
         const { p, tangente } = raquis(s)
         const lado = tangente.clone().cross(ARRIBA).normalize()
         for (const signo of [1, -1]) {
+          const plano = ficha.planos ? (f % 2 ? 0.35 : -0.3) : ficha.colgantes ? -0.35 : 0
           hojaLarga(malla, {
             base: p,
-            direccion: lado.clone().multiplyScalar(signo).addScaledVector(tangente, 0.4).addScaledVector(ARRIBA, pejibaye ? (f % 2 ? 0.3 : -0.3) : -0.35).normalize(),
-            largo: (pejibaye ? 0.55 : 0.8) * (0.5 + 0.5 * Math.sin(Math.PI * Math.min(1, s * 1.1))),
-            ancho: pejibaye ? 0.03 : 0.028,
-            curvatura: 1.2,
+            direccion: lado.clone().multiplyScalar(signo).addScaledVector(tangente, 0.4).addScaledVector(ARRIBA, plano).normalize(),
+            largo: ficha.largoFoliolo * (0.5 + 0.5 * Math.sin(Math.PI * Math.min(1, s * 1.1))),
+            ancho: ficha.anchoFoliolo,
+            curvatura: ficha.colgantes ? 1.2 : 0.8,
             nervio: 0.3,
-            color: (u) => mezclar(mezclar([62, 112, 44], [110, 140, 60], edad * 0.4), [170, 150, 90], transicion(0.88, 1, u) * edad),
+            color: colorHoja,
             ruido,
             nu: 8,
             nv: 2,
@@ -388,14 +439,27 @@ export function palmera(malla, random, ruido, pejibaye = false) {
         }
       }
     }
+
     // Frutos bajo la corona.
-    if (pejibaye) {
+    if (ficha.fruto === 'pejibaye') {
       for (let r = 0; r < 2; r++) racimoDePejibaye(malla, tope.clone().addScaledVector(ARRIBA, -0.3).addScaledVector(vector(Math.cos(az + r * 3), 0, Math.sin(az + r * 3)), 0.12), random, ruido)
-    } else {
+    } else if (ficha.fruto === 'coco') {
       for (let c = 0; c < 9; c++) {
         const ang = c * 2.39996
         const fueraCoco = vector(Math.cos(ang), -0.6, Math.sin(ang)).normalize()
         frutoDeCoco(malla, tope.clone().addScaledVector(fueraCoco, 0.32), fueraCoco, 0.12, c % 4 === 0, ruido)
+      }
+    } else if (ficha.fruto) {
+      // Racimo colgante de frutos redondos apretados.
+      const desde = tope.clone().addScaledVector(ARRIBA, -0.4).addScaledVector(fuera, radio * 1.5)
+      const raquis = columna(desde, vector(fuera.x * 0.4, -1, fuera.z * 0.4).normalize(), 0.7, 0.4, 10)
+      malla.tubo(10, 5, (u) => raquis(u).p, () => 0.015, () => [120, 110, 70])
+      for (let f = 0; f < ficha.fruto.cantidad; f++) {
+        const { p } = raquis(0.2 + (f / ficha.fruto.cantidad) * 0.75)
+        const ang = f * 2.39996
+        const centro = p.clone().add(vector(Math.cos(ang), 0, Math.sin(ang)).multiplyScalar(ficha.fruto.radio * 1.6))
+        cuerpo(malla, centro.clone().addScaledVector(ARRIBA, -ficha.fruto.radio), centro.clone().addScaledVector(ARRIBA, ficha.fruto.radio), ficha.fruto.radio, PERFILES.esfera, (u, a, q) =>
+          aclarar(ficha.fruto.color, 0.85 + ruido(q.x * 300, q.y * 300, q.z * 300, 1) * 0.25), { nu: 7, nv: 8 })
       }
     }
   }
