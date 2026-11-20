@@ -80,10 +80,10 @@ Luego abre `http://localhost:5173`.
 La página se publica desde la rama `gh-pages`, que lleva solo la versión compilada:
 
 ```bash
-npm run build:pages
+npm run deploy
 ```
 
-Ese comando compila la página con la ruta `/Generador-3D/` en la carpeta `dist`. El contenido de `dist` se sube como un commit nuevo a la rama `gh-pages`, junto con un archivo `.nojekyll`, y GitHub la actualiza en uno o dos minutos.
+Ese comando compila la página con la ruta `/Generador-3D/` (`npm run build:pages`) y la sube como un commit nuevo a la rama `gh-pages`, junto con un archivo `.nojekyll`. GitHub la actualiza en uno o dos minutos. Si la página no cambió, no sube nada. No necesita dependencias extra: lo hace el script [scripts/desplegar.mjs](scripts/desplegar.mjs) con git.
 
 ## Estructura
 
