@@ -60,14 +60,23 @@ function Entorno() {
 // hemisferica (tono frio desde el cielo, calido desde el suelo). La sombra de
 // contacto apoya el objeto en el piso.
 // listo: el modelo termino de armarse; ahi aparecen sus efectos de luz.
+// El paso de la luz calculada a los colores de pantalla es el "neutral", que
+// conserva el tono y la saturacion de cada color (con el de cine, el rojo de
+// Marte se volvia crema y una piedra gris se veia blanca).
+// Correccion - Poll: los colores de la foto se veian desteñidos y demasiado claros
 export default function Visor3D({ modelo, desarmar, listo, onProgreso, onDesarmado }) {
   return (
-    <Canvas shadows camera={{ position: VISTA, fov: 45 }} scene={{ environmentIntensity: 0.55 }}>
+    <Canvas
+      shadows
+      camera={{ position: VISTA, fov: 45 }}
+      gl={{ toneMapping: THREE.NeutralToneMapping }}
+      scene={{ environmentIntensity: 0.5 }}
+    >
       <Entorno />
-      <hemisphereLight args={['#dfe9ff', '#5a4a3a', 0.45]} />
+      <hemisphereLight args={['#dfe9ff', '#5a4a3a', 0.4]} />
       <directionalLight
         position={[12, 25, 15]}
-        intensity={1.9}
+        intensity={1.6}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-left={-20}
