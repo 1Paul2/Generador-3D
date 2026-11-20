@@ -77,7 +77,9 @@ const ESPECIES = {
   // vientre: cuanto se aclara la panza (0 = nada, 1 = del todo al color claro);
   // pelo: largo del pelaje (1 = normal);
   // colorDeFoto: el color del pelaje varia segun la raza y se toma de la foto;
-  // colorHocico: el hocico tiene un color propio (la cara blanca de la vaca).
+  // colorHocico: el hocico tiene un color propio (la cara blanca de la vaca);
+  // ganado: usa el armado del ganado (caballo, vaca, cebu); colorMelena: color
+  // de la crin y del mechon de la cola; colorPatas: patas oscuras desde la rodilla.
   perro: { colorDeFoto: true, vientre: 0.6, cuerpo: [3.2, 1.1, 1.1], patas: [2.3, 0.26], cuello: [1, 50, 0.45], cabeza: 0.75, hocico: [0.75, 0.32], orejas: 'caidas', cola: [1.3, 0.14, 35], colores: [[150, 105, 60], [205, 175, 135], [35, 28, 24]] },
   lobo: { orejas: 'puntiagudas', cola: [1.5, 0.22, -20], colores: [[120, 115, 108], [200, 195, 185], [30, 28, 26]] },
   zorro: { cuerpo: [2.8, 0.9, 0.9], patas: [1.4, 0.2], orejas: 'puntiagudas', hocico: [0.85, 0.25], cola: [1.8, 0.35, -10], colores: [[205, 105, 40], [240, 230, 215], [35, 25, 20]] },
@@ -85,8 +87,9 @@ const ESPECIES = {
   leon: { cuerpo: [4.2, 1.35, 1.2], patas: [2.2, 0.36], cabeza: 0.85, hocico: [0.42, 0.46], orejas: 'redondas', cola: [2, 0.12, -30], extra: 'melena', colores: [[200, 160, 100], [160, 105, 55], [40, 30, 25]] },
   tigre: { patron: 'rayas', vientre: 0.8, cuerpo: [3.8, 1.2, 1.2], patas: [1.9, 0.36], cabeza: 0.85, hocico: [0.5, 0.42], orejas: 'redondas', cola: [2.2, 0.14, -20], colores: [[215, 120, 45], [240, 235, 220], [30, 25, 22]] },
   oso: { cuerpo: [3.6, 1.6, 1.6], patas: [1.6, 0.55], cuello: [0.6, 30, 0.8], cabeza: 0.95, hocico: [0.55, 0.45], orejas: 'redondas', cola: [0.3, 0.2, 0], colores: [[95, 65, 45], [125, 90, 62], [25, 20, 18]] },
-  caballo: { colorDeFoto: true, vientre: 0.15, pelo: 0.4, cuerpo: [4.2, 1.35, 1.2], patas: [3.2, 0.3], cuello: [2.2, 55, 0.6], cabeza: 0.65, hocico: [1.5, 0.42], orejas: 'puntiagudas', cola: [2.2, 0.25, -60], pezunas: true, colores: [[120, 75, 45], [80, 50, 32], [30, 24, 20]] },
-  vaca: { patron: 'parches', vientre: 0, pelo: 0.35, cuerpo: [4.4, 1.7, 1.6], patas: [2.4, 0.4], cuello: [1.1, 25, 0.75], cabeza: 0.8, hocico: [0.9, 0.55], orejas: 'redondas', cola: [2.2, 0.1, -70], colorHocico: [238, 232, 226], extra: 'cuernos', pezunas: true, colores: [[245, 245, 240], [45, 40, 38], [35, 30, 28]] },
+  caballo: { ganado: 'caballo', colorMelena: [28, 22, 20], colorPatas: [40, 30, 25], vientre: 0.15, pelo: 0.4, cuerpo: [4.2, 1.35, 1.2], patas: [3.2, 0.3], cuello: [2.2, 55, 0.6], cabeza: 0.65, hocico: [1.5, 0.42], orejas: 'puntiagudas', cola: [2.2, 0.25, -60], pezunas: true, colores: [[146, 88, 50], [110, 66, 38], [30, 24, 20]] },
+  vaca: { ganado: 'vaca', patronCara: true, patron: 'parches', vientre: 0, pelo: 0.35, cuerpo: [4.4, 1.7, 1.6], patas: [2.4, 0.4], cuello: [1.1, 25, 0.75], cabeza: 0.8, hocico: [0.9, 0.55], orejas: 'redondas', cola: [2.2, 0.1, -70], colorHocico: [238, 232, 226], extra: 'cuernos', pezunas: true, colores: [[245, 245, 240], [45, 40, 38], [35, 30, 28]] },
+  cebu: { ganado: 'cebu', vientre: 0, pelo: 0.3, colorHocico: [70, 66, 64], colorMelena: [40, 36, 34], colores: [[212, 208, 198], [150, 146, 140], [38, 34, 32]] },
   oveja: { vientre: 0, pelo: 2.6, cuerpo: [3.2, 1.6, 1.6], patas: [1.6, 0.22], cuello: [0.7, 40, 0.5], cabeza: 0.6, hocico: [0.6, 0.35], orejas: 'caidas', cola: [0.4, 0.2, -50], pezunas: true, colores: [[235, 230, 215], [45, 40, 38], [30, 28, 26]] },
   cerdo: { vientre: 0, pelo: 0.2, cuerpo: [3.4, 1.5, 1.4], patas: [1, 0.32], cuello: [0.3, 20, 0.8], cabeza: 0.85, hocico: [0.55, 0.42], orejas: 'puntiagudas', cola: [0.5, 0.08, 40], pezunas: true, colores: [[240, 180, 175], [225, 150, 150], [60, 40, 40]] },
   conejo: { colorDeFoto: true, cuerpo: [2.2, 1.1, 1.1], patas: [0.7, 0.3], cuello: [0.4, 60, 0.5], cabeza: 0.7, hocico: [0.3, 0.32], orejas: 'largas', cola: [0.3, 0.3, 30], colores: [[200, 185, 165], [245, 240, 230], [40, 30, 30]] },
@@ -119,7 +122,8 @@ const ALIAS = {
   perra: 'perro', cachorro: 'perro', yegua: 'caballo', toro: 'vaca', cordero: 'oveja', chancho: 'cerdo',
   pajaro: 'ave', paloma: 'ave', pescado: 'pez', hombre: 'persona', mujer: 'persona', nino: 'persona',
   nina: 'persona', humano: 'persona', leona: 'leon', gata: 'gato', loba: 'lobo', osa: 'oso',
-  jaguar: 'leopardo', guepardo: 'leopardo', pantera: 'leopardo',
+  jaguar: 'leopardo', guepardo: 'leopardo', pantera: 'leopardo', buey: 'vaca', novillo: 'vaca',
+  ternero: 'vaca', ternera: 'vaca', vaquilla: 'vaca', brahman: 'cebu', potro: 'caballo', potranca: 'caballo',
 }
 
 // Correccion - Poll: el cuadrupedo tenia patas de tubo con bultos, la cabeza grande y redonda y se veia de peluche
@@ -321,7 +325,177 @@ function persona(e) {
   return piezas
 }
 
-const PLANES = { cuadrupedo, ave, pez, persona }
+// ---------- Ganado: caballo, vaca y cebu ----------
+
+// Escala de las medidas del ganado (en metros) a las unidades de las piezas,
+// para que las uniones suaves y la grilla funcionen como en los demas
+// cuadrupedos.
+const METRO = 2.6
+// Union angosta de las partes que tienen que verse definidas (patas, cara).
+const UNION_DEFINIDA = 0.07
+
+// Piezas con medidas en metros. "definida" usa la union angosta.
+const enMetros = (v) => v.map((x) => x * METRO)
+const el = (c, r, zona, definida) => Object.assign(elipsoide(enMetros(c), enMetros(r), zona), definida ? { union: UNION_DEFINIDA } : {})
+const cap = (a, b, ra, rb, zona, definida) => Object.assign(capsula(enMetros(a), enMetros(b), ra * METRO, rb * METRO, zona), definida ? { union: UNION_DEFINIDA } : {})
+const esf = (c, r, zona, definida) => el(c, [r, r, r], zona, definida)
+
+// Pata de un ungulado desde la rodilla (o el corvejon) hasta el piso: la
+// cana fina, el menudillo (la articulacion abultada sobre el casco), la
+// cuartilla inclinada y el casco; la vaca tiene la pezuna partida en dos.
+function pataBaja(piezas, x, rodilla, z, grosor, partida, zona) {
+  const menudillo = [x + 0.01, 0.2, z]
+  piezas.push(cap([x, rodilla, z], menudillo, grosor, grosor * 0.92, zona, true))
+  piezas.push(esf(menudillo, grosor * 1.25, zona, true))
+  const corona = [x + 0.06, 0.085, z]
+  piezas.push(cap(menudillo, corona, grosor, grosor * 1.05, zona, true))
+  if (partida) {
+    for (const d of [-1, 1]) {
+      piezas.push(cap([corona[0], 0.08, z + d * grosor * 0.5], [corona[0] + 0.04, 0.03, z + d * grosor * 0.55], grosor * 0.62, grosor * 0.7, 'oscuro', true))
+    }
+  } else {
+    piezas.push(cap([corona[0], 0.085, z], [corona[0] + 0.03, 0.035, z], grosor * 1.15, grosor * 1.45, 'oscuro', true))
+  }
+}
+
+// Correccion - Poll: la vaca y el caballo usaban el cuerpo de un perro agrandado y no se veian reales
+function ganado(e) {
+  const caballo = e.ganado === 'caballo'
+  const cebu = e.ganado === 'cebu'
+  const piezas = []
+  // Medidas reales: el caballo tiene 1.6 m a la cruz y patas largas; la vaca
+  // 1.4 m, el cuerpo largo y profundo y las patas cortas.
+  const cruz = caballo ? 1.6 : cebu ? 1.45 : 1.42
+  const codo = caballo ? 0.95 : 0.78
+  const rodilla = caballo ? 0.5 : 0.42
+  const largo = caballo ? 0.82 : 0.88 // mitad del largo del tronco
+  const ancho = caballo ? 0.3 : 0.36
+  const fondo = codo - 0.04
+  const medio = (cruz + fondo) / 2
+  const alto = (cruz - fondo) / 2
+
+  // Tronco: el barril, el pecho, la grupa y el lomo.
+  piezas.push(el([-0.02, medio - 0.04, 0], [largo * 0.78, alto * 0.95, ancho], 'cuerpo'))
+  piezas.push(el([largo * 0.6, medio, 0], [largo * 0.38, alto * 0.92, ancho * 0.85], 'cuerpo'))
+  piezas.push(el([-largo * 0.66, medio + 0.05, 0], [largo * 0.42, alto * 0.88, ancho * 0.95], 'cuerpo'))
+  piezas.push(el([0, cruz - 0.12, 0], [largo * 0.9, 0.12, ancho * 0.8], 'cuerpo'))
+  // La cruz se levanta sobre los hombros; en el cebu, la giba.
+  piezas.push(el([largo * 0.5, cruz - 0.12, 0], [0.26, 0.08, 0.1], 'cuerpo'))
+  if (cebu) piezas.push(el([largo * 0.5, cruz + 0.08, 0], [0.2, 0.2, 0.13], 'cuerpo'))
+  if (!caballo) {
+    // Huesos de la cadera (puntas del anca) y del isquion, que se marcan en la vaca.
+    piezas.push(...espejo((l) => esf([-largo * 0.6, cruz - 0.05, l * ancho * 0.72], 0.085, 'cuerpo')))
+    piezas.push(...espejo((l) => esf([-largo * 1.02, cruz - 0.12, l * 0.1], 0.06, 'cuerpo')))
+    // Ubre con sus cuatro pezones, entre las patas de atras.
+    const ubre = [-largo * 0.5, fondo - 0.06, 0]
+    piezas.push(el(ubre, [0.2, 0.14, 0.16], 'ubre'))
+    for (const dx of [-1, 1]) {
+      for (const dz of [-1, 1]) {
+        const desde = [ubre[0] + dx * 0.07, ubre[1] - 0.1, dz * 0.065]
+        piezas.push(cap(desde, [desde[0], desde[1] - 0.07, desde[2]], 0.018, 0.015, 'ubre', true))
+      }
+    }
+  }
+
+  // Patas. Las delanteras: el omoplato inclinado, el brazo hasta el codo,
+  // el antebrazo musculoso que se afina hasta la rodilla y la pata baja.
+  for (const lado of [1, -1]) {
+    const paso = lado * 0.05
+    const zd = lado * ancho * 0.55
+    const xd = largo * 0.62
+    piezas.push(cap([xd - 0.18, cruz - 0.1, lado * ancho * 0.5], [xd + 0.06, codo + 0.14, lado * ancho * 0.55], 0.1, 0.11, 'cuerpo'))
+    piezas.push(cap([xd + 0.06, codo + 0.14, lado * ancho * 0.55], [xd - 0.08 + paso, codo, zd], 0.11, 0.09, 'pata'))
+    piezas.push(cap([xd - 0.06 + paso, codo, zd], [xd + paso, rodilla, zd], 0.095, 0.055, 'pata', true))
+    piezas.push(esf([xd + paso, rodilla, zd], 0.062, caballo ? 'patabaja' : 'pata', true))
+    pataBaja(piezas, xd + paso, rodilla, zd, caballo ? 0.045 : 0.05, !caballo, caballo ? 'patabaja' : 'pata')
+
+    // Traseras: el muslo ancho, la babilla (rodilla) adelante, la pierna
+    // que baja hacia atras hasta el corvejon (con su punta) y la pata baja.
+    const zt = lado * ancho * 0.55
+    const xt = -largo * 0.66
+    const babilla = [xt + 0.2 - paso, codo + 0.02, lado * ancho * 0.8]
+    const corvejon = [xt - 0.12 - paso, rodilla + 0.08, zt]
+    piezas.push(el([xt - 0.05, medio - 0.02, lado * ancho * 0.62], [0.3, alto * 0.95, 0.15], 'pata'))
+    piezas.push(cap(babilla, corvejon, 0.12, 0.065, 'pata', true))
+    piezas.push(esf([corvejon[0] - 0.04, corvejon[1] + 0.03, zt], 0.055, caballo ? 'patabaja' : 'pata', true))
+    pataBaja(piezas, corvejon[0] + 0.02, corvejon[1], zt, caballo ? 0.045 : 0.05, !caballo, caballo ? 'patabaja' : 'pata')
+  }
+
+  if (caballo) cabezaDeCaballo(piezas, largo, cruz)
+  else cabezaDeVaca(piezas, largo, cruz, cebu)
+
+  // Cola: el maslo (la parte con hueso) y el pelo largo que cae hasta los
+  // corvejones (caballo), o una cola fina con el mechon en la punta (vaca).
+  const nace = [-largo * 1.05, cruz - 0.08, 0]
+  if (caballo) {
+    piezas.push(cap(nace, [nace[0] - 0.12, nace[1] - 0.22, 0], 0.065, 0.05, 'cola'))
+    piezas.push(cap([nace[0] - 0.08, nace[1] - 0.1, 0], [nace[0] - 0.16, 0.62, 0], 0.09, 0.06, 'crin'))
+  } else {
+    piezas.push(cap(nace, [nace[0] - 0.04, 0.6, 0], 0.03, 0.018, 'cola', true))
+    piezas.push(el([nace[0] - 0.045, 0.52, 0], [0.045, 0.11, 0.045], 'crin', true))
+  }
+  return piezas
+}
+
+// Cabeza de caballo: el cuello largo y arqueado con la crin, la quijada
+// ancha atras, la cara larga y recta que se angosta hasta el hocico suave
+// con los ollares, los ojos a los costados, las orejas paradas y el copete.
+function cabezaDeCaballo(piezas, largo, cruz) {
+  const base = [largo * 0.78, cruz - 0.22, 0]
+  const medio = [largo * 0.98 + 0.15, cruz + 0.12, 0]
+  const nuca = [largo * 0.98 + 0.33, cruz + 0.38, 0]
+  piezas.push(cap(base, medio, 0.27, 0.19, 'cuerpo'))
+  piezas.push(cap(medio, nuca, 0.19, 0.12, 'cuerpo'))
+  // Crin: pelo largo sobre el borde de arriba del cuello y el copete.
+  piezas.push(cap([base[0] - 0.08, cruz + 0.07, 0.04], [medio[0] - 0.08, medio[1] + 0.22, 0.05], 0.08, 0.08, 'crin'))
+  piezas.push(cap([medio[0] - 0.08, medio[1] + 0.22, 0.05], [nuca[0] - 0.05, nuca[1] + 0.14, 0.04], 0.08, 0.065, 'crin'))
+
+  // La cabeza apunta hacia abajo y adelante.
+  const frente = [nuca[0] + 0.1, nuca[1] - 0.05, 0]
+  const hocico = [nuca[0] + 0.38, nuca[1] - 0.45, 0]
+  piezas.push(el([nuca[0] + 0.02, nuca[1] - 0.12, 0], [0.15, 0.13, 0.11], 'cuerpo', true)) // quijada
+  piezas.push(el(frente, [0.11, 0.1, 0.1], 'cuerpo', true))
+  piezas.push(cap(frente, [hocico[0] - 0.04, hocico[1] + 0.04, 0], 0.085, 0.065, 'cuerpo', true))
+  piezas.push(cap([nuca[0] + 0.02, nuca[1] - 0.2, 0], [hocico[0] - 0.07, hocico[1] - 0.04, 0], 0.06, 0.045, 'cuerpo', true)) // mandibula
+  piezas.push(el(hocico, [0.075, 0.08, 0.07], 'hocico', true))
+  piezas.push(...espejo((l) => el([hocico[0] + 0.03, hocico[1] + 0.01, l * 0.04], [0.02, 0.025, 0.012], 'oscuro', true)))
+  // Ojos grandes a los costados, bajo la frente.
+  piezas.push(...espejo((l) => el([frente[0] - 0.01, frente[1] - 0.03, l * 0.105], [0.028, 0.022, 0.02], 'ojo', true)))
+  // Orejas paradas y en punta.
+  piezas.push(...espejo((l) => cap([nuca[0] - 0.02, nuca[1] + 0.06, l * 0.055], [nuca[0] - 0.01, nuca[1] + 0.22, l * 0.075], 0.035, 0.008, 'cuerpo', true)))
+  piezas.push(el([frente[0] - 0.02, frente[1] + 0.07, 0], [0.06, 0.03, 0.05], 'crin', true)) // copete
+}
+
+// Cabeza de vaca (o de cebu): cuello corto y grueso con papada, la frente
+// ancha y plana, la cara que baja hasta el morro ancho con la nariz humeda,
+// las orejas a los lados (largas y caidas en el cebu) y los cuernos cortos.
+function cabezaDeVaca(piezas, largo, cruz, cebu) {
+  const base = [largo * 0.82, cruz - 0.3, 0]
+  const nuca = [largo * 0.82 + 0.38, cruz - 0.1, 0]
+  piezas.push(cap(base, nuca, 0.28, 0.2, 'cuerpo'))
+  // Papada: un pliegue de piel bajo el cuello, mucho mas grande en el cebu.
+  piezas.push(el([base[0] + 0.12, base[1] - 0.17, 0], cebu ? [0.32, 0.28, 0.05] : [0.24, 0.15, 0.05], 'cuerpo'))
+
+  const frente = [nuca[0] + 0.08, nuca[1] - 0.02, 0]
+  const morro = [nuca[0] + 0.26, nuca[1] - 0.34, 0]
+  piezas.push(el(frente, [0.12, 0.13, 0.13], 'cuerpo', true))
+  piezas.push(cap(frente, [morro[0] - 0.02, morro[1] + 0.06, 0], 0.115, 0.095, 'hocico', true))
+  piezas.push(cap([nuca[0], nuca[1] - 0.12, 0], [morro[0] - 0.06, morro[1] - 0.04, 0], 0.07, 0.06, 'hocico', true)) // mandibula
+  piezas.push(el(morro, [0.085, 0.08, 0.115], 'hocico', true))
+  piezas.push(el([morro[0] + 0.04, morro[1] + 0.005, 0], [0.045, 0.05, 0.085], 'oscuro', true)) // nariz
+  piezas.push(...espejo((l) => el([frente[0] + 0.04, frente[1] - 0.02, l * 0.125], [0.03, 0.024, 0.02], 'ojo', true)))
+  piezas.push(
+    ...espejo((l) =>
+      cebu
+        ? cap([nuca[0] - 0.02, nuca[1], l * 0.12], [nuca[0] + 0.04, nuca[1] - 0.22, l * 0.24], 0.06, 0.05, 'cuerpo', true)
+        : cap([nuca[0] - 0.02, nuca[1] + 0.02, l * 0.12], [nuca[0] - 0.04, nuca[1] + 0.0, l * 0.3], 0.045, 0.03, 'cuerpo', true),
+    ),
+  )
+  piezas.push(...espejo((l) => cap([nuca[0] + 0.0, nuca[1] + 0.1, l * 0.08], [nuca[0] - 0.03, nuca[1] + 0.2, l * 0.15], 0.03, 0.012, 'claro', true)))
+}
+
+// El ganado (caballo, vaca, cebu) tiene su propio armado; los demas cuadrupedos, el general.
+const PLANES = { cuadrupedo: (e) => (e.ganado ? ganado(e) : cuadrupedo(e)), ave, pez, persona }
 
 // ---------- Surface Nets ----------
 
@@ -430,7 +604,7 @@ const OJO = 0.03
 // especie puede cambiarlos).
 const PELO = { cuadrupedo: 1, ave: 0.5, pez: 0, persona: 0 }
 // Zonas con el pelo mas largo que el resto del cuerpo (la melena del leon).
-const PELO_DE_ZONA = { melena: 3.5 }
+const PELO_DE_ZONA = { melena: 3.5, crin: 7 }
 const VIENTRE = { cuadrupedo: 0.5, ave: 0.5, pez: 0.6, persona: 0 }
 // Altura del relieve del pelo (en unidades de la escena, con pelo = 1).
 const RELIEVE_PELO = 0.018
@@ -537,6 +711,9 @@ function coloresDeZonas(plan, especie, regiones, receta) {
     cuerpo,
     cola: cuerpo,
     melena: detalle,
+    crin: especie.colorMelena ?? detalle,
+    patabaja: especie.colorPatas ?? cuerpo,
+    ubre: [222, 168, 158],
     pata: plan === 'persona' ? [55, 65, 95] : cuerpo,
     detalle,
     // El hocico de un perro, un gato o un caballo es del mismo pelaje que la
@@ -591,12 +768,15 @@ export function crearSer(receta, apariencia) {
   const fondoTronco = tronco[1] + (centroTronco - tronco[1]) * 0.15
   const fuerzaPanza = especie.vientre ?? VIENTRE[plan]
   const pelo = especie.pelo ?? PELO[plan]
-  const conPelaje = new Set(['cuerpo', 'pata', 'cola'])
+  // patronCara: el patron del pelaje sigue por la cara (las manchas de la vaca).
+  const conPelaje = new Set(['cuerpo', 'pata', 'cola', 'patabaja', ...(especie.patronCara ? ['hocico'] : [])])
 
   const colorDe = (zona, p) => {
     let rgb = zonas[zona]
     if (!conPelaje.has(zona)) return rgb
-    const cantidad = especie.patron ? patronEn(especie.patron, p, zona, medida, ruido) : 0
+    let cantidad = especie.patron ? patronEn(especie.patron, p, zona, medida, ruido) : 0
+    // Cara de la Holstein: los costados negros y la franja blanca por el centro.
+    if (zona === 'hocico' && especie.patronCara) cantidad = Math.max(cantidad, transicion(0.07, 0.13, Math.abs(p[2])))
     if (especie.patron === 'reticulado') rgb = mezclar(zonas.detalle, rgb, cantidad)
     else rgb = mezclar(rgb, zonas.oscuro, cantidad)
     if (zona === 'cuerpo') rgb = mezclar(rgb, zonas.panza, fuerzaPanza * transicion(centroTronco, fondoTronco, p[1]))
