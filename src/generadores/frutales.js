@@ -467,9 +467,10 @@ export function palmera(malla, random, ruido, nombre) {
 
 // Racimo de pejibaye: frutos conicos rojos y naranja, cada uno con su
 // capuchon verde, apretados alrededor del raquis que cuelga.
+// Correccion - Poll: el raquis del racimo quedaba abierto en las dos puntas
 export function racimoDePejibaye(malla, desde, random, ruido) {
   const raquis = columna(desde, vector(0.3, -1, 0).normalize(), 0.45, 0.5, 12)
-  malla.tubo(12, 6, (u) => raquis(u).p, () => 0.012, () => [120, 120, 70])
+  malla.tubo(12, 6, (u) => raquis(u).p, () => 0.012, () => [120, 120, 70], { tapas: true })
   for (let f = 0; f < 40; f++) {
     const { p, tangente } = raquis(0.15 + (f / 40) * 0.8)
     const ang = f * 2.39996

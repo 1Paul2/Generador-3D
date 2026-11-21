@@ -238,6 +238,7 @@ function hojaDeBanano(malla, origen, azimut, edad, seca, random, ruido) {
 // enormes, las hojas viejas secas colgando y el racimo: el raquis que se
 // curva hacia abajo con las manos de bananos (los dedos curvados hacia
 // arriba) y la bellota morada en la punta.
+// Correccion - Poll: los dedos del racimo quedaban abiertos en la punta del pedunculo
 export function banano(malla, random, ruido) {
   suelo(malla, 0.8, 0.1, ruido)
   const alto = 2.3 + random() * 0.4
@@ -319,6 +320,7 @@ export function banano(malla, random, ruido) {
             c = aclarar(c, 1 + 0.06 * Math.cos(a * 5))
             return mezclar(c, [45, 38, 30], transicion(0.9, 0.97, s))
           },
+          { tapas: true },
         )
       }
     }
@@ -574,19 +576,22 @@ export function cana(malla, random, ruido) {
 
 // Trozo de cana cortada (lo que se cosecha): un tallo con sus nudos y la
 // cara del corte, de fibra clara.
+// Correccion - Poll: la cara del corte era mas chica que el tallo y dejaba un anillo abierto
 export function trozoDeCana(malla, desde, hacia, random, ruido) {
   const largo = desde.distanceTo(hacia)
   const nudos = Math.max(2, Math.round(largo / 0.15))
   const colorTallo = mezclar(CANA.tallo, CANA.talloMorado, random() * 0.7)
   const eje = hacia.clone().sub(desde)
+  // Radio del tallo: mas grueso en los nudos.
+  const radio = (u) => {
+    const f = (u * nudos) % 1
+    return 0.018 * (1 + 0.03 * Math.sin(Math.PI * f) + 0.06 * Math.exp(-((f / 0.025) ** 2)) + 0.06 * Math.exp(-(((1 - f) / 0.025) ** 2)))
+  }
   malla.tubo(
     nudos * 16,
     20,
     (u) => desde.clone().addScaledVector(eje, u),
-    (u) => {
-      const f = (u * nudos) % 1
-      return 0.018 * (1 + 0.03 * Math.sin(Math.PI * f) + 0.06 * Math.exp(-((f / 0.025) ** 2)) + 0.06 * Math.exp(-(((1 - f) / 0.025) ** 2)))
-    },
+    radio,
     (u, a, p) => {
       const f = (u * nudos) % 1
       let c = aclarar(colorTallo, 0.82 + ruido(p.x * 90, p.y * 90, p.z * 3, 3) * 0.32)
@@ -594,14 +599,16 @@ export function trozoDeCana(malla, desde, hacia, random, ruido) {
       return mezclar(c, CANA.nudo, 0.8 * (1 - transicion(0.006, 0.02, Math.min(f, 1 - f))))
     },
   )
-  // Caras del corte, con la fibra en puntitos.
+  // Caras del corte, con la fibra en puntitos; del mismo ancho que el tallo
+  // en la punta para que no quede ninguna rendija.
   for (const [centro, signo] of [[desde, -1], [hacia, 1]]) {
     const normal = eje.clone().normalize().multiplyScalar(signo)
     const lado = normal.clone().cross(ARRIBA).normalize()
     const otro = normal.clone().cross(lado).normalize()
+    const borde = radio(signo < 0 ? 0 : 1)
     malla.superficie(8, 24, (u, v) => {
       const a = v * Math.PI * 2
-      const r = 0.018 * u
+      const r = borde * u
       const p = centro.clone().addScaledVector(lado, Math.cos(a) * r).addScaledVector(otro, Math.sin(a) * r)
       const fibra = ruido(p.x * 900, p.y * 900, p.z * 900, 1)
       return { p, c: aclarar(mezclar([222, 210, 160], colorTallo, transicion(0.85, 1, u)), 0.88 + fibra * 0.2) }

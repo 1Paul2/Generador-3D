@@ -74,6 +74,7 @@ function trifoliada(malla, nodo, azimut, tamano, colorHoja, random, ruido) {
 
 // Vaina de frijol: aplanada, un poco curva, con el bulto de cada grano y el
 // pico en la punta.
+// Correccion - Poll: la vaina quedaba abierta del lado del pedunculo
 export function vainaDeFrijol(malla, desde, direccion, largo, seca, ruido) {
   const eje = columna(desde, direccion, largo, 0.9, 20)
   const granos = 5
@@ -92,6 +93,7 @@ export function vainaDeFrijol(malla, desde, direccion, largo, seca, ruido) {
       const c = seca ? FRIJOL.vainaSeca : FRIJOL.vaina
       return aclarar(c, 0.85 + ruido(p.x * 400, p.y * 400, p.z * 400, 2) * 0.25 + 0.06 * Math.cos(a * 2))
     },
+    { tapas: true },
   )
 }
 
@@ -418,6 +420,7 @@ const CHILE = {
 
 // Chile dulce (pimiento): cuadrado, con tres o cuatro lobulos abajo, la piel
 // brillante y el pedunculo grueso con su caliz.
+// Correccion - Poll: el pedunculo quedaba abierto en la punta
 export function frutoDeChile(malla, punta, largo, maduro, random, ruido) {
   const color = maduro ? CHILE.rojo : CHILE.verde
   const lobulos = random() < 0.5 ? 3 : 4
@@ -442,7 +445,7 @@ export function frutoDeChile(malla, punta, largo, maduro, random, ruido) {
     },
   )
   // Pedunculo con su caliz.
-  malla.tubo(10, 8, (u) => punta.clone().addScaledVector(ARRIBA, -largo * 0.08 + u * largo * 0.35), (u) => 0.006 * (1 + (1 - u) * 0.8), () => [70, 110, 50])
+  malla.tubo(10, 8, (u) => punta.clone().addScaledVector(ARRIBA, -largo * 0.08 + u * largo * 0.35), (u) => 0.006 * (1 + (1 - u) * 0.8), () => [70, 110, 50], { tapas: true })
 }
 
 // Mata de chile dulce: tallo que se bifurca una y otra vez, hojas elipticas
@@ -602,6 +605,7 @@ const CACAO = {
 // Mazorca de cacao: alargada y en punta, con diez costillas (cinco marcadas
 // y cinco suaves), la superficie verrugosa y el color que pasa del verde
 // del pedunculo al amarillo o rojo.
+// Correccion - Poll: el pedunculo quedaba abierto en la punta
 export function mazorcaDeCacao(malla, desde, direccion, largo, rojiza, ruido) {
   const color = rojiza ? CACAO.rojo : CACAO.amarillo
   const hasta = desde.clone().addScaledVector(direccion, largo)
@@ -624,7 +628,7 @@ export function mazorcaDeCacao(malla, desde, direccion, largo, rojiza, ruido) {
     },
   )
   // Pedunculo lenoso.
-  malla.tubo(6, 8, (u) => desde.clone().addScaledVector(direccion, -0.04 + u * 0.05), () => 0.008, () => [100, 90, 60])
+  malla.tubo(6, 8, (u) => desde.clone().addScaledVector(direccion, -0.04 + u * 0.05), () => 0.008, () => [100, 90, 60], { tapas: true })
 }
 
 // Arbol de cacao: tronco bajo que se abre en la horqueta en cuatro ramas,

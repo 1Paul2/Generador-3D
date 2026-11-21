@@ -601,11 +601,12 @@ function vainaColgante(malla, desde, vaina, random, ruido) {
 
 // Mamon chino (rambutan): racimo de frutas rojas cubiertas de pelos
 // (espinteros) blandos, verdes en la punta.
+// Correccion - Poll: los tallitos de cada fruta quedaban abiertos en la punta
 export function racimoDeMamonChino(malla, desde, random, ruido) {
   const frutos = 6 + Math.floor(random() * 6)
   for (let f = 0; f < frutos; f++) {
     const centro = desde.clone().add(vector((random() - 0.5) * 0.12, -0.06 - random() * 0.1, (random() - 0.5) * 0.12))
-    malla.tubo(4, 3, (u) => desde.clone().lerp(centro, u), () => 0.0025, () => [90, 100, 50])
+    malla.tubo(4, 4, (u) => desde.clone().lerp(centro, u), () => 0.0025, () => [90, 100, 50], { tapas: true })
     const radio = 0.024
     cuerpo(
       malla,
@@ -645,11 +646,12 @@ function propagulo(malla, desde, random, ruido) {
 //   radio, largo (cuanto mas largo que ancho), color y color2 (degradado),
 //   colgante (largo del pedunculo; negativo: el fruto apunta hacia arriba),
 //   racimo (cuantos juntos).
+// Correccion - Poll: el pedunculo quedaba abierto en la punta
 export function frutoGenerico(malla, punta, f, random, ruido) {
   const colgante = f.colgante ?? 0.04
   const arriba = colgante < 0
   const fin = punta.clone().addScaledVector(ARRIBA, -Math.abs(colgante))
-  if (Math.abs(colgante) > 0.005) malla.tubo(6, 4, (u) => punta.clone().lerp(fin, u), () => Math.max(0.002, f.radio * 0.08), () => [96, 104, 56])
+  if (Math.abs(colgante) > 0.005) malla.tubo(6, 6, (u) => punta.clone().lerp(fin, u), () => Math.max(0.002, f.radio * 0.08), () => [96, 104, 56], { tapas: true })
   const cantidad = f.racimo ?? 1
   for (let n = 0; n < cantidad; n++) {
     const ang = n * 2.39996
@@ -692,15 +694,16 @@ const FRUTOS = {
   mamonchino: (malla, p, random, ruido) => racimoDeMamonChino(malla, p, random, ruido),
   propagulo: (malla, p, random, ruido) => propagulo(malla, p, random, ruido),
   naranja: (malla, p, random, ruido) => frutoDeNaranja(malla, p.clone().addScaledVector(ARRIBA, -0.05), 0.04, random, ruido),
+  // Correccion - Poll: el pedunculo del mango y del aguacate quedaba abierto
   mango: (malla, p, random, ruido) => {
     // El mango cuelga de un pedunculo largo.
     const fin = p.clone().addScaledVector(ARRIBA, -0.25)
-    malla.tubo(8, 4, (u) => p.clone().lerp(fin, u), () => 0.003, () => [90, 100, 50])
+    malla.tubo(8, 4, (u) => p.clone().lerp(fin, u), () => 0.003, () => [90, 100, 50], { tapas: true })
     frutoDeMango(malla, fin, 0.07, random, ruido)
   },
   aguacate: (malla, p, random, ruido) => {
     const fin = p.clone().addScaledVector(ARRIBA, -0.1)
-    malla.tubo(6, 4, (u) => p.clone().lerp(fin, u), () => 0.005, () => [90, 100, 50])
+    malla.tubo(6, 4, (u) => p.clone().lerp(fin, u), () => 0.005, () => [90, 100, 50], { tapas: true })
     frutoDeAguacate(malla, fin, 0.065, random, ruido)
   },
   oreja: (malla, p, random, ruido) => orejaDeGuanacaste(malla, p.clone().addScaledVector(ARRIBA, -0.1), random, ruido),
