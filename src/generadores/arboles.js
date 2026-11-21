@@ -740,6 +740,7 @@ function epifita(malla, punto, random, ruido) {
 // Arbol con eje central (cipres, laurel): el tronco llega hasta la punta y
 // de el salen pisos de ramas casi horizontales, mas cortas hacia arriba
 // (conico) o mas largas en el medio (pisos).
+// Correccion - Poll: las puntas de las ramas de cada piso quedaban abiertas
 function arbolConEje(malla, especie, random, ruido, puntas) {
   const fuste = (u) => vector((ruido(u * 2, 1, 7, 2) - 0.5) * 0.3, -0.05 + u * especie.alto, (ruido(u * 2, 9, 7, 2) - 0.5) * 0.3)
   malla.tubo(
@@ -757,7 +758,7 @@ function arbolConEje(malla, especie, random, ruido, puntas) {
       const az = (r / ramas) * Math.PI * 2 + piso * 0.9 + random() * 0.4
       const dir = haciaAfuera(az, especie.elevacion + (random() - 0.5) * 10)
       const eje = columna(fuste(t), dir, largo, 0.5, 12)
-      malla.tubo(10, 6, (u) => eje(u).p, (u) => especie.radio * 0.18 * (1 - u * 0.7) * (1 - t * 0.6), (u, a, p) => colorDeCorteza(especie.corteza, p, u, a, ruido))
+      malla.tubo(10, 6, (u) => eje(u).p, (u) => especie.radio * 0.18 * (1 - u * 0.7) * (1 - t * 0.6), (u, a, p) => colorDeCorteza(especie.corteza, p, u, a, ruido), { tapas: true })
       // Ramitas a lo largo de la rama, con las hojas.
       const ramitas = Math.max(2, Math.round(largo * 2.2))
       for (let k = 1; k <= ramitas; k++) {
@@ -770,6 +771,7 @@ function arbolConEje(malla, especie, random, ruido, puntas) {
 }
 
 // Correccion - Poll: los arboles eran matas redondas iguales para cualquier especie
+// Correccion - Poll: el fuste y las ramas quedaban abiertos en las puntas
 export function arbol(malla, random, ruido, nombre) {
   const especie = ARBOLES[nombre]
   suelo(malla, Math.max(0.8, especie.radio * 4, especie.zancos ? 1.6 : 0), 0.06, ruido, especie.suelo === 'barro')
@@ -811,6 +813,7 @@ export function arbol(malla, random, ruido, nombre) {
       const c = colorDeCorteza(especie.corteza, p, u, a, ruido)
       return especie.epifitas ? mezclar(c, [70, 100, 50], transicion(0.45, 0.6, ruido(p.x * 6, p.y * 6, p.z * 6, 3)) * 0.8) : c
     },
+    { tapas: true },
   )
 
   // Neumatoforos del mangle salado: raices que salen del barro como lapices,
@@ -850,6 +853,7 @@ export function arbol(malla, random, ruido, nombre) {
         const c = colorDeCorteza(especie.corteza, p, u, a, ruido)
         return especie.epifitas ? mezclar(c, [70, 100, 50], transicion(0.45, 0.6, ruido(p.x * 6, p.y * 6, p.z * 6, 3)) * 0.8) : c
       },
+      { tapas: true },
     )
     const fin = eje(1)
     if (nivel >= 2) ramasGruesas.push(eje(0.5).p)

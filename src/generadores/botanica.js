@@ -59,8 +59,10 @@ export function crearMalla() {
   // transportan a lo largo de la curva para que el tubo no se retuerza.
   //   centro(u) -> Vector3; radio(u, a) -> radio en el angulo a;
   //   color(u, a, p) -> [r, g, b].
-  //   tapas: cierra con una tapa redondeada cada punta que quede abierta (los
-  //     frutos y las raices; los tallos y las ramas no la necesitan).
+  //   tapas: cierra con una tapa cada punta que quede abierta (los frutos y
+  //     las raices; los tallos y las ramas no la necesitan). true hace una
+  //     cupula; un numero da la altura de la tapa en proporcion al radio
+  //     (0.1: casi plana, como un poste cortado).
   // Correccion - Poll: los frutos cuya forma no se cerraba en la punta quedaban huecos
   function tubo(nu, nv, centro, radio, color, { tapas = false } = {}) {
     const puntos = Array.from({ length: nu + 1 }, (_, i) => centro(i / nu))
@@ -81,6 +83,7 @@ export function crearMalla() {
       return { p, c: color(u, a, p) }
     })
     if (!tapas) return
+    const altoTapa = tapas === true ? 0.55 : tapas
     // Tapas: desde el borde de la punta hacia el eje, en forma de cupula, con
     // el mismo color del borde. En la punta de atras se recorre al reves para
     // que la cara mire hacia afuera.
@@ -97,7 +100,7 @@ export function crearMalla() {
           .clone()
           .addScaledVector(normales[i], Math.cos(a) * r)
           .addScaledVector(binormales[i], Math.sin(a) * r)
-          .addScaledVector(eje, abierta * 0.55 * Math.sin(angulo))
+          .addScaledVector(eje, abierta * altoTapa * Math.sin(angulo))
         return { p, c: color(u, a, p) }
       })
     }

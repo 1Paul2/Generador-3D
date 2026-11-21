@@ -227,6 +227,7 @@ function hojaDeTomate(malla, nodo, azimut, tamano, random, ruido) {
 // Mata de tomate tutorada: el tallo en zigzag amarrado a una estaca de
 // madera, las hojas compuestas y los racimos de tomates, maduros abajo y
 // verdes arriba, con flores amarillas en el racimo mas nuevo.
+// Correccion - Poll: la estaca de madera quedaba abierta arriba
 export function tomate(malla, random, ruido) {
   suelo(malla, 0.45, 0.07, ruido)
   // Estaca de madera de seccion cuadrada, con la veta a lo largo.
@@ -237,6 +238,7 @@ export function tomate(malla, random, ruido) {
     (u) => vector(estaca.x, -0.05 + u * 1.75, estaca.z),
     (u, a) => (0.018 / Math.max(Math.abs(Math.cos(a)), Math.abs(Math.sin(a)))) * 0.85 * (u > 0.99 ? 0.6 : 1),
     (u, a, p) => aclarar(TOMATE.madera, 0.75 + ruido(p.x * 60, p.y * 3, p.z * 60, 3) * 0.45),
+    { tapas: 0.12 },
   )
   const alto = 1.55
   const tallo = (u) => vector(Math.sin(u * 9) * 0.018, -0.02 + u * alto, Math.cos(u * 7) * 0.018)
@@ -634,6 +636,7 @@ export function mazorcaDeCacao(malla, desde, direccion, largo, rojiza, ruido) {
 // Arbol de cacao: tronco bajo que se abre en la horqueta en cuatro ramas,
 // hojas grandes y caidas (las nuevas rojizas y lacias), mazorcas que nacen
 // directo del tronco y de las ramas gruesas, y hojarasca en el suelo.
+// Correccion - Poll: la punta del tronco quedaba abierta en la horqueta
 export function cacao(malla, random, ruido) {
   suelo(malla, 0.9, 0.08, ruido)
   // Hojarasca.
@@ -660,7 +663,7 @@ export function cacao(malla, random, ruido) {
   }
   const altoTronco = 1.3
   const tronco = (u) => vector((ruido(u * 2, 3, 3, 2) - 0.5) * 0.15, -0.03 + u * altoTronco, (ruido(u * 2, 7, 3, 2) - 0.5) * 0.15)
-  malla.tubo(60, 24, tronco, (u) => 0.075 * (1 - u * 0.25) + 0.03 * Math.exp(-u * 15), colorCorteza)
+  malla.tubo(60, 24, tronco, (u) => 0.075 * (1 - u * 0.25) + 0.03 * Math.exp(-u * 15), colorCorteza, { tapas: true })
   // Mazorcas en el tronco.
   for (let m = 0; m < 3; m++) {
     const az = m * 2.3 + random()

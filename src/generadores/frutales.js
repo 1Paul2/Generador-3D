@@ -164,6 +164,7 @@ export function frutoDeCoco(malla, centro, eje, radio, maduro, ruido) {
 // Mata de papaya: un tallo sin ramas con las cicatrices de las hojas caidas,
 // la corona de hojas palmeadas enormes en peciolos largos y huecos, y las
 // papayas pegadas al tallo debajo de las hojas.
+// Correccion - Poll: la punta del tronco quedaba abierta y desde arriba se veia el hueco
 export function papaya(malla, random, ruido) {
   suelo(malla, 0.6, 0.08, ruido)
   const alto = 2.4
@@ -183,6 +184,7 @@ export function papaya(malla, random, ruido) {
       c = mezclar(c, [90, 80, 60], Math.exp(-((f - 0.5) ** 2) / 0.01) * Math.max(0, Math.cos(a - u * 40 * 2.39996)) ** 6 * 0.8)
       return mezclar(c, [120, 140, 70], transicion(0.8, 0.95, u))
     },
+    { tapas: true },
   )
   const tope = tallo(1)
   // Hojas: peciolo largo y la lamina con siete lobulos profundos.
@@ -225,6 +227,7 @@ export function papaya(malla, random, ruido) {
 // Chayotera en su ramada: postes de madera, la malla de alambre a dos
 // metros y encima la guia del chayote, con hojas acorazonadas y lobuladas,
 // zarcillos, y los chayotes colgando por debajo.
+// Correccion - Poll: los postes del emparrado eran tubos huecos abiertos arriba
 export function chayote(malla, random, ruido) {
   suelo(malla, 1.6, 0.05, ruido)
   const altura = 2
@@ -239,6 +242,7 @@ export function chayote(malla, random, ruido) {
         (u) => vector(x, -0.05 + u * (altura + 0.05), z),
         () => 0.05,
         (u, a, p) => aclarar([120, 96, 70], 0.75 + ruido(p.x * 30, p.y * 3, p.z * 30, 3) * 0.45),
+        { tapas: 0.12 },
       )
     }
   }
@@ -350,6 +354,7 @@ const PALMAS = {
 // Palmera desde su ficha: el tronco con sus anillos (o espinas, o las bases de
 // las hojas viejas), la corona de hojas pinnadas y los frutos bajo la corona.
 // Correccion - Poll: solo habia coco y pejibaye; las palmas de Costa Rica se arman por su ficha
+// Correccion - Poll: la punta del tronco y el raquis del racimo quedaban abiertos
 export function palmera(malla, random, ruido, nombre) {
   const ficha = PALMAS[nombre]
   suelo(malla, Math.max(1.2, ficha.radio * 6), 0.08, ruido)
@@ -379,6 +384,7 @@ export function palmera(malla, random, ruido, nombre) {
         // La corona del palmito: el tramo verde liso donde nacen las hojas.
         return ficha.corona ? mezclar(c, [90, 130, 70], transicion(1 - ficha.corona / alto - 0.02, 1 - ficha.corona / alto, u)) : c
       },
+      { tapas: true },
     )
     // Cono de raices en zancos de la chonta.
     for (let z = 0; z < (ficha.zancos ?? 0); z++) {
@@ -453,7 +459,7 @@ export function palmera(malla, random, ruido, nombre) {
       // Racimo colgante de frutos redondos apretados.
       const desde = tope.clone().addScaledVector(ARRIBA, -0.4).addScaledVector(fuera, radio * 1.5)
       const raquis = columna(desde, vector(fuera.x * 0.4, -1, fuera.z * 0.4).normalize(), 0.7, 0.4, 10)
-      malla.tubo(10, 5, (u) => raquis(u).p, () => 0.015, () => [120, 110, 70])
+      malla.tubo(10, 5, (u) => raquis(u).p, () => 0.015, () => [120, 110, 70], { tapas: true })
       for (let f = 0; f < ficha.fruto.cantidad; f++) {
         const { p } = raquis(0.2 + (f / ficha.fruto.cantidad) * 0.75)
         const ang = f * 2.39996
