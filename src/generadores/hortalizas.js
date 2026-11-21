@@ -123,6 +123,7 @@ function hojaDeZanahoria(malla, base, azimut, random, ruido) {
 }
 
 // Raiz de zanahoria: conica y naranja, con anillos finos y raicillas.
+// Correccion - Poll: el hombro de la raiz quedaba abierto
 export function raizDeZanahoria(malla, tope, direccion, largo, ruido) {
   const fin = tope.clone().addScaledVector(direccion, largo)
   malla.tubo(
@@ -135,6 +136,7 @@ export function raizDeZanahoria(malla, tope, direccion, largo, ruido) {
       const c = aclarar([232, 112, 28], 0.88 + ruido(p.x * 200, p.y * 200, p.z * 200, 2) * 0.15)
       return mezclar(aclarar(c, 1 - 0.2 * anillo), [120, 140, 60], 1 - transicion(0, 0.04, u))
     },
+    { tapas: true },
   )
 }
 

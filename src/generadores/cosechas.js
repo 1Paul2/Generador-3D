@@ -11,6 +11,7 @@ import { frutoDeAguacate, frutoDeChayote, frutoDeCoco, frutoDeMango, frutoDeMelo
 // Banano (o platano): curvo, de cinco aristas, con el cuello verde hacia el
 // pedunculo, la punta negra y pecas cafe. El platano es mas grande, mas
 // anguloso y mas verde.
+// Correccion - Poll: la punta del pedunculo del banano quedaba abierta
 function dedoDeBanano(malla, desde, salida, platano, random, ruido) {
   const largo = platano ? 0.28 : 0.2
   const radio = platano ? 0.024 : 0.019
@@ -33,6 +34,7 @@ function dedoDeBanano(malla, desde, salida, platano, random, ruido) {
       c = mezclar(c, [95, 62, 30], transicion(0.7, 0.76, ruido(p.x * 150, p.y * 150, p.z * 150, 2)) * (platano ? 0.9 : 0.7))
       return mezclar(c, [40, 32, 26], transicion(0.93, 0.98, s))
     },
+    { tapas: true },
   )
 }
 
@@ -58,6 +60,7 @@ function banano(malla, random, ruido, opciones) {
 // Raices de yuca recien arrancadas: alargadas y algo curvas, con la cascara
 // cafe y aspera de anillos finos, y una cortada que deja ver la pulpa blanca
 // con el anillo rosado de la cascara interna.
+// Correccion - Poll: la punta gruesa de las raices quedaba abierta y se veia el hueco
 function yuca(malla, random, ruido) {
   for (let r = 0; r < 3; r++) {
     const largo = 0.34 + random() * 0.1
@@ -80,6 +83,7 @@ function yuca(malla, random, ruido) {
         c = aclarar(c, 1 + 0.1 * Math.sin(u * 160 + ruido(p.x * 40, p.y * 40, p.z * 40, 2) * 6))
         return mezclar(c, [150, 110, 72], transicion(0.62, 0.7, ruido(p.x * 30, p.y * 30, p.z * 30, 3)) * 0.5)
       },
+      { tapas: !cortada },
     )
     if (cortada) {
       // Cara del corte: pulpa blanca, anillo rosado y la cascara.
@@ -99,9 +103,10 @@ function yuca(malla, random, ruido) {
 }
 
 // Rama de cafe recien cortada, con dos pares de hojas y los racimos de granos.
+// Correccion - Poll: las puntas de la bandola quedaban abiertas
 function cafe(malla, random, ruido) {
   const eje = columna(vector(-0.18, 0.04, 0), vector(1, 0.05, 0), 0.36, 0.2, 20)
-  malla.tubo(40, 8, (u) => eje(u).p, () => 0.004, () => [104, 112, 72])
+  malla.tubo(40, 8, (u) => eje(u).p, () => 0.004, () => [104, 112, 72], { tapas: true })
   for (let n = 1; n <= 4; n++) {
     const s = n / 4.5
     const { p, tangente } = eje(s)
@@ -143,6 +148,7 @@ function cana(malla, random, ruido) {
 
 // Monton de frijoles (rojos, o del color que se pida: "frijoles negros") con un par de
 // vainas secas al lado. Cada frijol es un rinon chico con el hilo blanco.
+// Correccion - Poll: los granos quedaban abiertos por un lado
 function frijol(malla, random, ruido, opciones) {
   const color = opciones.color ? aclarar(opciones.color, 0.6) : [118, 32, 36]
   for (let f = 0; f < 320; f++) {
@@ -163,6 +169,7 @@ function frijol(malla, random, ruido, opciones) {
         // Hilo (hilum) blanco en el medio del lado concavo.
         return Math.abs(u - 0.5) < 0.12 && Math.cos(a) < -0.85 ? [225, 220, 205] : c
       },
+      { tapas: true },
     )
   }
   for (let v = 0; v < 2; v++) {

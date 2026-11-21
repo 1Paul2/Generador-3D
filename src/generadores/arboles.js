@@ -601,11 +601,12 @@ function vainaColgante(malla, desde, vaina, random, ruido) {
 
 // Mamon chino (rambutan): racimo de frutas rojas cubiertas de pelos
 // (espinteros) blandos, verdes en la punta.
+// Correccion - Poll: los tallitos de cada fruta quedaban abiertos en la punta
 export function racimoDeMamonChino(malla, desde, random, ruido) {
   const frutos = 6 + Math.floor(random() * 6)
   for (let f = 0; f < frutos; f++) {
     const centro = desde.clone().add(vector((random() - 0.5) * 0.12, -0.06 - random() * 0.1, (random() - 0.5) * 0.12))
-    malla.tubo(4, 3, (u) => desde.clone().lerp(centro, u), () => 0.0025, () => [90, 100, 50])
+    malla.tubo(4, 4, (u) => desde.clone().lerp(centro, u), () => 0.0025, () => [90, 100, 50], { tapas: true })
     const radio = 0.024
     cuerpo(
       malla,
@@ -645,11 +646,12 @@ function propagulo(malla, desde, random, ruido) {
 //   radio, largo (cuanto mas largo que ancho), color y color2 (degradado),
 //   colgante (largo del pedunculo; negativo: el fruto apunta hacia arriba),
 //   racimo (cuantos juntos).
+// Correccion - Poll: el pedunculo quedaba abierto en la punta
 export function frutoGenerico(malla, punta, f, random, ruido) {
   const colgante = f.colgante ?? 0.04
   const arriba = colgante < 0
   const fin = punta.clone().addScaledVector(ARRIBA, -Math.abs(colgante))
-  if (Math.abs(colgante) > 0.005) malla.tubo(6, 4, (u) => punta.clone().lerp(fin, u), () => Math.max(0.002, f.radio * 0.08), () => [96, 104, 56])
+  if (Math.abs(colgante) > 0.005) malla.tubo(6, 6, (u) => punta.clone().lerp(fin, u), () => Math.max(0.002, f.radio * 0.08), () => [96, 104, 56], { tapas: true })
   const cantidad = f.racimo ?? 1
   for (let n = 0; n < cantidad; n++) {
     const ang = n * 2.39996
@@ -692,15 +694,16 @@ const FRUTOS = {
   mamonchino: (malla, p, random, ruido) => racimoDeMamonChino(malla, p, random, ruido),
   propagulo: (malla, p, random, ruido) => propagulo(malla, p, random, ruido),
   naranja: (malla, p, random, ruido) => frutoDeNaranja(malla, p.clone().addScaledVector(ARRIBA, -0.05), 0.04, random, ruido),
+  // Correccion - Poll: el pedunculo del mango y del aguacate quedaba abierto
   mango: (malla, p, random, ruido) => {
     // El mango cuelga de un pedunculo largo.
     const fin = p.clone().addScaledVector(ARRIBA, -0.25)
-    malla.tubo(8, 4, (u) => p.clone().lerp(fin, u), () => 0.003, () => [90, 100, 50])
+    malla.tubo(8, 4, (u) => p.clone().lerp(fin, u), () => 0.003, () => [90, 100, 50], { tapas: true })
     frutoDeMango(malla, fin, 0.07, random, ruido)
   },
   aguacate: (malla, p, random, ruido) => {
     const fin = p.clone().addScaledVector(ARRIBA, -0.1)
-    malla.tubo(6, 4, (u) => p.clone().lerp(fin, u), () => 0.005, () => [90, 100, 50])
+    malla.tubo(6, 4, (u) => p.clone().lerp(fin, u), () => 0.005, () => [90, 100, 50], { tapas: true })
     frutoDeAguacate(malla, fin, 0.065, random, ruido)
   },
   oreja: (malla, p, random, ruido) => orejaDeGuanacaste(malla, p.clone().addScaledVector(ARRIBA, -0.1), random, ruido),
@@ -737,6 +740,7 @@ function epifita(malla, punto, random, ruido) {
 // Arbol con eje central (cipres, laurel): el tronco llega hasta la punta y
 // de el salen pisos de ramas casi horizontales, mas cortas hacia arriba
 // (conico) o mas largas en el medio (pisos).
+// Correccion - Poll: las puntas de las ramas de cada piso quedaban abiertas
 function arbolConEje(malla, especie, random, ruido, puntas) {
   const fuste = (u) => vector((ruido(u * 2, 1, 7, 2) - 0.5) * 0.3, -0.05 + u * especie.alto, (ruido(u * 2, 9, 7, 2) - 0.5) * 0.3)
   malla.tubo(
@@ -754,7 +758,7 @@ function arbolConEje(malla, especie, random, ruido, puntas) {
       const az = (r / ramas) * Math.PI * 2 + piso * 0.9 + random() * 0.4
       const dir = haciaAfuera(az, especie.elevacion + (random() - 0.5) * 10)
       const eje = columna(fuste(t), dir, largo, 0.5, 12)
-      malla.tubo(10, 6, (u) => eje(u).p, (u) => especie.radio * 0.18 * (1 - u * 0.7) * (1 - t * 0.6), (u, a, p) => colorDeCorteza(especie.corteza, p, u, a, ruido))
+      malla.tubo(10, 6, (u) => eje(u).p, (u) => especie.radio * 0.18 * (1 - u * 0.7) * (1 - t * 0.6), (u, a, p) => colorDeCorteza(especie.corteza, p, u, a, ruido), { tapas: true })
       // Ramitas a lo largo de la rama, con las hojas.
       const ramitas = Math.max(2, Math.round(largo * 2.2))
       for (let k = 1; k <= ramitas; k++) {
@@ -767,6 +771,7 @@ function arbolConEje(malla, especie, random, ruido, puntas) {
 }
 
 // Correccion - Poll: los arboles eran matas redondas iguales para cualquier especie
+// Correccion - Poll: el fuste y las ramas quedaban abiertos en las puntas
 export function arbol(malla, random, ruido, nombre) {
   const especie = ARBOLES[nombre]
   suelo(malla, Math.max(0.8, especie.radio * 4, especie.zancos ? 1.6 : 0), 0.06, ruido, especie.suelo === 'barro')
@@ -808,6 +813,7 @@ export function arbol(malla, random, ruido, nombre) {
       const c = colorDeCorteza(especie.corteza, p, u, a, ruido)
       return especie.epifitas ? mezclar(c, [70, 100, 50], transicion(0.45, 0.6, ruido(p.x * 6, p.y * 6, p.z * 6, 3)) * 0.8) : c
     },
+    { tapas: true },
   )
 
   // Neumatoforos del mangle salado: raices que salen del barro como lapices,
@@ -847,6 +853,7 @@ export function arbol(malla, random, ruido, nombre) {
         const c = colorDeCorteza(especie.corteza, p, u, a, ruido)
         return especie.epifitas ? mezclar(c, [70, 100, 50], transicion(0.45, 0.6, ruido(p.x * 6, p.y * 6, p.z * 6, 3)) * 0.8) : c
       },
+      { tapas: true },
     )
     const fin = eje(1)
     if (nivel >= 2) ramasGruesas.push(eje(0.5).p)

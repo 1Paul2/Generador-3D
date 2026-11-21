@@ -59,7 +59,12 @@ export function crearMalla() {
   // transportan a lo largo de la curva para que el tubo no se retuerza.
   //   centro(u) -> Vector3; radio(u, a) -> radio en el angulo a;
   //   color(u, a, p) -> [r, g, b].
-  function tubo(nu, nv, centro, radio, color) {
+  //   tapas: cierra con una tapa cada punta que quede abierta (los frutos y
+  //     las raices; los tallos y las ramas no la necesitan). true hace una
+  //     cupula; un numero da la altura de la tapa en proporcion al radio
+  //     (0.1: casi plana, como un poste cortado).
+  // Correccion - Poll: los frutos cuya forma no se cerraba en la punta quedaban huecos
+  function tubo(nu, nv, centro, radio, color, { tapas = false } = {}) {
     const puntos = Array.from({ length: nu + 1 }, (_, i) => centro(i / nu))
     const tangentes = puntos.map((_, i) => puntos[Math.min(nu, i + 1)].clone().sub(puntos[Math.max(0, i - 1)]).normalize())
     let normal = Math.abs(tangentes[0].y) < 0.9 ? vector(0, 1, 0) : vector(1, 0, 0)
@@ -77,6 +82,28 @@ export function crearMalla() {
       const p = puntos[i].clone().addScaledVector(normales[i], Math.cos(a) * r).addScaledVector(binormales[i], Math.sin(a) * r)
       return { p, c: color(u, a, p) }
     })
+    if (!tapas) return
+    const altoTapa = tapas === true ? 0.55 : tapas
+    // Tapas: desde el borde de la punta hacia el eje, en forma de cupula, con
+    // el mismo color del borde. En la punta de atras se recorre al reves para
+    // que la cara mire hacia afuera.
+    for (const [u, i, sentido] of [[0, 0, -1], [1, nu, 1]]) {
+      let abierta = 0
+      for (let k = 0; k < nv; k++) abierta = Math.max(abierta, radio(u, (k / nv) * Math.PI * 2))
+      if (abierta < 1e-5) continue
+      const eje = tangentes[i].clone().multiplyScalar(sentido)
+      superficie(4, nv, (sr, v) => {
+        const a = sentido * v * Math.PI * 2
+        const angulo = (sr * Math.PI) / 2
+        const r = radio(u, a) * Math.cos(angulo)
+        const p = puntos[i]
+          .clone()
+          .addScaledVector(normales[i], Math.cos(a) * r)
+          .addScaledVector(binormales[i], Math.sin(a) * r)
+          .addScaledVector(eje, abierta * altoTapa * Math.sin(angulo))
+        return { p, c: color(u, a, p) }
+      })
+    }
   }
 
   // Arma la geometria: une los vertices repetidos (costuras de los tubos)
@@ -259,6 +286,7 @@ export const PERFILES = {
 
 // Cuerpo de revolucion (frutos, granos, tuberculos) entre "desde" y "hacia".
 //   forma(u, a): deformacion del radio en cada punto (gajos, costillas).
+// Correccion - Poll: los frutos con punta abierta (mango, aguacate, papaya) se veian huecos; ahora se tapan
 export function cuerpo(malla, desde, hacia, radio, perfil, color, opciones = {}) {
   const { forma = () => 1, nu = 24, nv = 24 } = opciones
   const eje = hacia.clone().sub(desde)
@@ -268,6 +296,7 @@ export function cuerpo(malla, desde, hacia, radio, perfil, color, opciones = {})
     (u) => desde.clone().addScaledVector(eje, u),
     (u, a) => radio * perfil(u) * forma(u, a),
     color,
+    { tapas: true },
   )
 }
 
